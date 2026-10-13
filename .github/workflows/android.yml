@@ -33,7 +33,7 @@ jobs:
       - name: Set up Gradle and validate wrapper
         uses: gradle/actions/setup-gradle@v4
       - name: Build, test and lint
-        run: bash ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --no-daemon
+        run: bash ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
       - name: Name APK
         run: cp app/build/outputs/apk/debug/app-debug.apk Sphere-Music.apk
       - name: Upload installable APK
@@ -51,6 +51,12 @@ jobs:
           path: |
             app/build/reports/tests/
             app/build/reports/lint-results-debug.html
+      - name: Upload on-device tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sphere-Music-Device-Tests
+          path: app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          if-no-files-found: error
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')

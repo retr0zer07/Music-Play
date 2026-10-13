@@ -34,7 +34,6 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,11 +56,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -164,29 +161,6 @@ fun SphereApp(
                     },
                 )
                 Spacer(Modifier.height(16.dp))
-                if (section == 0 && search.isBlank()) {
-                    Box(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
-                            .background(Brush.linearGradient(listOf(Color(0xFF332345), Color(0xFF191D2D))))
-                            .padding(20.dp),
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(stringResource(R.string.offline_badge), color = SphereMint, style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp)
-                            Text(stringResource(R.string.your_music), fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                            Text(pluralStringResource(R.plurals.song_count, state.songs.size, state.songs.size), color = SphereMuted, style = MaterialTheme.typography.bodySmall)
-                            Button(
-                                onClick = { filtered.randomOrNull()?.let { onPlay(filtered, it, true) } },
-                                enabled = state.ready && filtered.isNotEmpty(),
-                                colors = ButtonDefaults.buttonColors(containerColor = SphereMint, contentColor = SphereBackground),
-                            ) {
-                                Icon(Icons.Rounded.Shuffle, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.shuffle_all), fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(14.dp))
-                }
                 Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (section == 1 && selectedAlbum != null) IconButton({ selectedAlbum = null }) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back))
@@ -201,6 +175,13 @@ fun SphereApp(
                         Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
+                    if (section == 0) IconButton(
+                        onClick = { filtered.randomOrNull()?.let { onPlay(filtered, it, true); playerOpen = true } },
+                        enabled = state.ready && filtered.isNotEmpty(),
+                    ) {
+                        Icon(Icons.Rounded.Shuffle, stringResource(R.string.shuffle_all), tint = SpherePurple)
+                    }
+                    Text(filtered.size.toString(), color = SphereMuted, style = MaterialTheme.typography.labelMedium)
                     if (state.loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                 }
                 when {

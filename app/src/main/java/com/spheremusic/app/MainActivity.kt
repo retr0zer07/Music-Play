@@ -27,6 +27,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spheremusic.app.ui.SphereApp
 import com.spheremusic.app.ui.SphereTheme
+import com.spheremusic.app.ui.hideStatusBar
 
 class MainActivity : ComponentActivity() {
     private val model: MusicViewModel by viewModels()
@@ -37,6 +38,7 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
+        window.hideStatusBar()
         val audioPermission = if (Build.VERSION.SDK_INT >= 33) {
             Manifest.permission.READ_MEDIA_AUDIO
         } else {
@@ -103,4 +105,9 @@ class MainActivity : ComponentActivity() {
 
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) window.hideStatusBar()
+    }
 }

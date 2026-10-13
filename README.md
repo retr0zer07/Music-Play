@@ -8,6 +8,9 @@ cuando el archivo no tiene una portada disponible.
 ## Qué incluye esta versión
 
 - Biblioteca del dispositivo mediante MediaStore: canciones, álbumes y búsqueda.
+- Inicio simplificado con buscador y lista, sin cartel promocional.
+- Barra de hora/batería oculta (reaparece temporalmente al deslizar desde arriba).
+  Reproductor desplazable en pantallas pequeñas, horizontal o con letras grandes.
 - Favoritos guardados localmente.
 - Reproducción en segundo plano, notificación multimedia y controles de pantalla
   bloqueada; pausa al desconectar auriculares y gestión del foco de audio.
@@ -35,6 +38,20 @@ Las versiones etiquetadas `v*` también publican el APK en
 [Releases](https://github.com/retr0zer07/Music-Play/releases), sin necesidad de
 descargar un artifact. GitHub aloja el código y el APK, **no ejecuta la app**;
 GitHub Pages no es necesario para una aplicación nativa.
+
+### Archivos que aparecen en la biblioteca
+
+La biblioteca incluye **todo el audio indexado por Android en almacenamiento
+compartido**, aunque Android no lo marque como música; también puede incluir
+grabaciones, tonos y podcasts. No se aplica un límite de duración ni de cantidad.
+El botón actualizar vuelve a consultar el índice de audio, incluyendo los
+volúmenes externos que Android expone en MediaStore.
+
+Los archivos en carpetas privadas de otras apps, carpetas con `.nomedia`,
+descargas offline cifradas o archivos todavía no indexados no son accesibles
+mediante ese permiso. Si falta un archivo, cópialo a una carpeta pública como
+`Music`, espera a que Android lo indexe y actualiza la biblioteca. No solicitamos
+acceso total al almacenamiento ni prometemos acceso a archivos protegidos.
 
 ### Portadas y letras
 
@@ -80,6 +97,11 @@ bash ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 
 El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`.
 Las pruebas cubren el parser LRC, lectura acotada de letras MP3 y formato de tiempo.
+Con un teléfono o emulador conectado, `:app:connectedDebugAndroidTest` comprueba
+que también se incluya audio con `IS_MUSIC=0` y que la biblioteca coincida con
+todo el índice accesible de MediaStore. El test crea un WAV silencioso temporal
+y lo elimina al terminar. CI compila este APK de pruebas, pero su ejecución
+requiere un dispositivo.
 
 ### GitHub Actions y publicación
 

@@ -28,7 +28,7 @@ class MusicRepository(private val context: Context) {
         )
         val result = mutableListOf<Song>()
         val cursor = context.contentResolver.query(
-            collection, columns, "${MediaStore.Audio.Media.IS_MUSIC} != 0", null,
+            collection, columns, null, null,
             "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC",
         ) ?: throw IOException("MediaStore returned no cursor")
         cursor.use {
