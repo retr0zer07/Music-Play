@@ -50,6 +50,7 @@ fun QueuePanel(
     val move by rememberUpdatedState(onMove)
     var dragging by remember { mutableStateOf<Long?>(null) }
     var dragY by remember { mutableStateOf(0f) }
+    var lastTarget by remember { mutableStateOf<Long?>(null) }
     val up = stringResource(R.string.queue_up)
     val down = stringResource(R.string.queue_down)
 
@@ -58,7 +59,13 @@ fun QueuePanel(
         val target = list.layoutInfo.visibleItemsInfo.firstOrNull {
             dragY >= it.offset && dragY <= it.offset + it.size
         } ?: return
-        queue.getOrNull(target.index)?.let { if (it.id != source) move(source, it.id) }
+        val targetId = target.key as? Long ?: return
+        if (targetId == source) {
+            lastTarget = null
+        } else if (targetId != lastTarget) {
+            lastTarget = targetId
+            move(source, targetId)
+        }
     }
 
     LaunchedEffect(dragging) {
@@ -109,6 +116,7 @@ fun QueuePanel(
                             detectDragGestures(
                                 onDragStart = {
                                     dragging = song.id
+                                    lastTarget = null
                                     val item = list.layoutInfo.visibleItemsInfo.firstOrNull { it.key == song.id }
                                     dragY = item?.let { it.offset + it.size / 2f } ?: 0f
                                 },
