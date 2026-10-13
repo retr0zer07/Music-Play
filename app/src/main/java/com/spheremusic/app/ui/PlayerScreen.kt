@@ -128,80 +128,80 @@ fun PlayerScreen(
                     Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
                         .heightIn(min = viewportHeight),
                 ) {
-                Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClose) { Icon(Icons.Rounded.ExpandMore, stringResource(R.string.close_player)) }
-                    Text(
-                        stringResource(R.string.now_playing), Modifier.weight(1f), textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp, color = SphereMuted,
-                    )
-                    FavoriteButton(song.id in state.favorites) { onFavorite(song) }
-                }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                    listOf(R.string.cover, R.string.lyrics, R.string.queue_short).forEachIndexed { index, label ->
-                        FilterChip(selected = tab == index, onClick = { tab = index }, label = { Text(stringResource(label), style = MaterialTheme.typography.labelMedium) })
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClose) { Icon(Icons.Rounded.ExpandMore, stringResource(R.string.close_player)) }
+                        Text(
+                            stringResource(R.string.now_playing), Modifier.weight(1f), textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp, color = SphereMuted,
+                        )
+                        FavoriteButton(song.id in state.favorites) { onFavorite(song) }
                     }
-                }
-                when (tab) {
-                    0 -> BoxWithConstraints(Modifier.height(contentHeight).fillMaxWidth().padding(vertical = 18.dp), contentAlignment = Alignment.Center) {
-                        Artwork(song, Modifier.size(minOf(maxWidth, maxHeight)))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
+                        listOf(R.string.cover, R.string.lyrics, R.string.queue_short).forEachIndexed { index, label ->
+                            FilterChip(selected = tab == index, onClick = { tab = index }, label = { Text(stringResource(label), style = MaterialTheme.typography.labelMedium) })
+                        }
                     }
-                    1 -> LyricsPanel(state, Modifier.height(contentHeight), onSeek) { onLinkLyrics(song) }
-                    else -> {
-                        Column(Modifier.height(contentHeight)) {
-                            Text(pluralStringResource(R.plurals.queue_count, state.queue.size, state.queue.size), Modifier.padding(vertical = 12.dp), color = SphereMuted)
-                            LazyColumn(Modifier.weight(1f)) {
-                                itemsIndexed(state.queue, key = { _, item -> item.id }) { index, item ->
-                                    SongRow(
-                                        item, item.id in state.favorites, item.id == song.id,
-                                        { onQueuePlay(index) }, { onFavorite(item) },
-                                    )
+                    when (tab) {
+                        0 -> BoxWithConstraints(Modifier.height(contentHeight).fillMaxWidth().padding(vertical = 18.dp), contentAlignment = Alignment.Center) {
+                            Artwork(song, Modifier.size(minOf(maxWidth, maxHeight)))
+                        }
+                        1 -> LyricsPanel(state, Modifier.height(contentHeight), onSeek) { onLinkLyrics(song) }
+                        else -> {
+                            Column(Modifier.height(contentHeight)) {
+                                Text(pluralStringResource(R.plurals.queue_count, state.queue.size, state.queue.size), Modifier.padding(vertical = 12.dp), color = SphereMuted)
+                                LazyColumn(Modifier.weight(1f)) {
+                                    itemsIndexed(state.queue, key = { _, item -> item.id }) { index, item ->
+                                        SongRow(
+                                            item, item.id in state.favorites, item.id == song.id,
+                                            { onQueuePlay(index) }, { onFavorite(item) },
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
+                    Text(song.title, Modifier.fillMaxWidth(), fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(song.artist, Modifier.padding(top = 7.dp, bottom = 14.dp), color = SphereMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    val seekDescription = stringResource(R.string.seek)
+                    Slider(
+                        value = dragPosition ?: state.positionMs.toFloat().coerceIn(0f, state.durationMs.toFloat().coerceAtLeast(1f)),
+                        onValueChange = { dragPosition = it },
+                        onValueChangeFinished = { dragPosition?.let { onSeek(it.toLong()) }; dragPosition = null },
+                        valueRange = 0f..state.durationMs.toFloat().coerceAtLeast(1f),
+                        enabled = state.durationMs > 0,
+                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = seekDescription },
+                    )
+                    Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(formatTime(dragPosition?.toLong() ?: state.positionMs), color = SphereMuted, style = MaterialTheme.typography.labelSmall)
+                        Text(formatTime(state.durationMs), color = SphereMuted, style = MaterialTheme.typography.labelSmall)
                     }
-                }
-                Text(song.title, Modifier.fillMaxWidth(), fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(song.artist, Modifier.padding(top = 7.dp, bottom = 14.dp), color = SphereMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                val seekDescription = stringResource(R.string.seek)
-                Slider(
-                    value = dragPosition ?: state.positionMs.toFloat().coerceIn(0f, state.durationMs.toFloat().coerceAtLeast(1f)),
-                    onValueChange = { dragPosition = it },
-                    onValueChangeFinished = { dragPosition?.let { onSeek(it.toLong()) }; dragPosition = null },
-                    valueRange = 0f..state.durationMs.toFloat().coerceAtLeast(1f),
-                    enabled = state.durationMs > 0,
-                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = seekDescription },
-                )
-                Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(formatTime(dragPosition?.toLong() ?: state.positionMs), color = SphereMuted, style = MaterialTheme.typography.labelSmall)
-                    Text(formatTime(state.durationMs), color = SphereMuted, style = MaterialTheme.typography.labelSmall)
-                }
-                Row(
-                    Modifier.fillMaxWidth().padding(vertical = 18.dp),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly,
-                ) {
-                    IconButton(onShuffle) {
-                        Icon(Icons.Rounded.Shuffle, stringResource(if (state.shuffle) R.string.shuffle_on else R.string.shuffle_off), tint = if (state.shuffle) SphereMint else SphereMuted)
-                    }
-                    IconButton(onPrevious, Modifier.size(48.dp)) { Icon(Icons.Rounded.SkipPrevious, stringResource(R.string.previous), Modifier.size(34.dp)) }
-                    IconButton(onToggle, Modifier.size(72.dp).clip(CircleShape).background(SphereMint)) {
-                        Icon(
-                            if (state.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                            stringResource(if (state.playing) R.string.pause else R.string.play),
-                            Modifier.size(38.dp), tint = SphereBackground,
-                        )
-                    }
-                    IconButton(onNext, Modifier.size(48.dp)) { Icon(Icons.Rounded.SkipNext, stringResource(R.string.next), Modifier.size(34.dp)) }
-                    val repeatLabel = when (state.repeat) {
-                        Player.REPEAT_MODE_ONE -> R.string.repeat_one
-                        Player.REPEAT_MODE_ALL -> R.string.repeat_all
-                        else -> R.string.repeat_off
-                    }
-                    IconButton(onRepeat) {
-                        Icon(
-                            if (state.repeat == Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,
-                            stringResource(repeatLabel), tint = if (state.repeat != Player.REPEAT_MODE_OFF) SphereMint else SphereMuted,
-                        )
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 18.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly,
+                    ) {
+                        IconButton(onShuffle) {
+                            Icon(Icons.Rounded.Shuffle, stringResource(if (state.shuffle) R.string.shuffle_on else R.string.shuffle_off), tint = if (state.shuffle) SphereMint else SphereMuted)
+                        }
+                        IconButton(onPrevious, Modifier.size(48.dp)) { Icon(Icons.Rounded.SkipPrevious, stringResource(R.string.previous), Modifier.size(34.dp)) }
+                        IconButton(onToggle, Modifier.size(72.dp).clip(CircleShape).background(SphereMint)) {
+                            Icon(
+                                if (state.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                                stringResource(if (state.playing) R.string.pause else R.string.play),
+                                Modifier.size(38.dp), tint = SphereBackground,
+                            )
+                        }
+                        IconButton(onNext, Modifier.size(48.dp)) { Icon(Icons.Rounded.SkipNext, stringResource(R.string.next), Modifier.size(34.dp)) }
+                        val repeatLabel = when (state.repeat) {
+                            Player.REPEAT_MODE_ONE -> R.string.repeat_one
+                            Player.REPEAT_MODE_ALL -> R.string.repeat_all
+                            else -> R.string.repeat_off
+                        }
+                        IconButton(onRepeat) {
+                            Icon(
+                                if (state.repeat == Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,
+                                stringResource(repeatLabel), tint = if (state.repeat != Player.REPEAT_MODE_OFF) SphereMint else SphereMuted,
+                            )
+                        }
                     }
                 }
             }
