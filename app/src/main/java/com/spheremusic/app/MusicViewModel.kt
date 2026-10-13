@@ -190,8 +190,6 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 report(R.string.lyrics_folder_error, error)
             } catch (error: SecurityException) {
                 report(R.string.lyrics_folder_error, error)
-            } catch (error: AmbiguousLyricsException) {
-                report(R.string.lyrics_ambiguous, error)
             } catch (error: IllegalArgumentException) {
                 report(R.string.lyrics_folder_error, error)
             }
@@ -249,6 +247,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     try {
                         val lyrics = repository.lyrics(current)
                         mutableState.update { it.copy(lyrics = lyrics) }
+                    } catch (error: AmbiguousLyricsException) {
+                        report(R.string.lyrics_ambiguous, error)
                     } catch (error: IOException) {
                         report(R.string.lyrics_error, error)
                     } catch (error: SecurityException) {

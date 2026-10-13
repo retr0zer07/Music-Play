@@ -16,7 +16,8 @@ object LyricsMatcher {
             matches.singleOrNull()?.let { return it }
         }
 
-        class AmbiguousLyricsException(name: String) : IllegalArgumentException("Multiple LRC files match $name")
         return null
     }
 }
+
+class AmbiguousLyricsException(name: String) : IllegalArgumentException("Multiple LRC files match $name")
