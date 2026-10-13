@@ -117,6 +117,14 @@ Antes de distribuir, comprobar en un teléfono Android 8 y uno Android 13+:
 - Letras USLT y LRC con offsets, selección de TXT y vínculo conservado al reabrir.
 - Tamaños de pantalla pequeños, orientación horizontal y fuentes grandes.
 
+La preview inicial se comprobó en un Samsung SM-S906U1 con Android 16:
+inicio, permiso denegado/concedido, indexación y portadas, reproducción de un WAV
+original de prueba, favoritos, mezcla, repetición, cola, servicio en segundo plano,
+pausa y vinculación de un LRC mediante el selector de Android. Tocar una línea
+del LRC desplazó la reproducción a su marca exacta de 30 segundos. GitHub Actions
+ejecuta las 11 pruebas unitarias, lint y la compilación del APK. Esto no sustituye
+la comprobación de todos los dispositivos y casos de la lista anterior.
+
 La app solo accede al audio autorizado y a los documentos seleccionados.
 Favoritos y vínculos se guardan en preferencias privadas, sin copia de seguridad.
 No incluye música, portadas comerciales ni letras protegidas: usa tus propios
