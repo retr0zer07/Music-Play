@@ -3,6 +3,7 @@ package com.spheremusic.app.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
@@ -56,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -88,6 +89,7 @@ fun PlayerScreen(
     val song = state.current ?: return
     var tab by rememberSaveable { mutableStateOf(0) }
     var dragPosition by remember(song.id) { mutableStateOf<Float?>(null) }
+    val safeInsets = WindowInsets.safeDrawing.asPaddingValues()
     Dialog(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
@@ -100,7 +102,7 @@ fun PlayerScreen(
             Column(
                 Modifier.fillMaxSize()
                     .background(Brush.verticalGradient(listOf(Color(0xFF292038), SphereBackground, SphereBackground)))
-                    .padding(padding).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 24.dp),
+                    .padding(padding).padding(safeInsets).padding(horizontal = 24.dp),
             ) {
                 Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClose) { Icon(Icons.Rounded.ExpandMore, stringResource(R.string.close_player)) }
@@ -111,7 +113,7 @@ fun PlayerScreen(
                     FavoriteButton(song.id in state.favorites) { onFavorite(song) }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                    listOf(R.string.cover, R.string.lyrics, R.string.queue).forEachIndexed { index, label ->
+                    listOf(R.string.cover, R.string.lyrics, R.string.queue_short).forEachIndexed { index, label ->
                         FilterChip(selected = tab == index, onClick = { tab = index }, label = { Text(stringResource(label), style = MaterialTheme.typography.labelMedium) })
                     }
                 }
@@ -122,7 +124,7 @@ fun PlayerScreen(
                     1 -> LyricsPanel(state, Modifier.weight(1f), onSeek) { onLinkLyrics(song) }
                     else -> {
                         Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.queue_count, state.queue.size), Modifier.padding(vertical = 12.dp), color = SphereMuted)
+                            Text(pluralStringResource(R.plurals.queue_count, state.queue.size, state.queue.size), Modifier.padding(vertical = 12.dp), color = SphereMuted)
                             LazyColumn {
                                 itemsIndexed(state.queue, key = { _, item -> item.id }) { index, item ->
                                     SongRow(
@@ -143,7 +145,7 @@ fun PlayerScreen(
                     onValueChangeFinished = { dragPosition?.let { onSeek(it.toLong()) }; dragPosition = null },
                     valueRange = 0f..state.durationMs.toFloat().coerceAtLeast(1f),
                     enabled = state.durationMs > 0,
-                    modifier = Modifier.fillMaxWidth().height(30.dp).semantics { contentDescription = seekDescription },
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = seekDescription },
                 )
                 Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(formatTime(dragPosition?.toLong() ?: state.positionMs), color = SphereMuted, style = MaterialTheme.typography.labelSmall)

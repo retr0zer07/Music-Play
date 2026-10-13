@@ -9,7 +9,10 @@
     <string name="search">Buscar canción, artista o álbum</string>
     <string name="clear_search">Borrar búsqueda</string>
     <string name="refresh">Actualizar biblioteca</string>
-    <string name="song_count">%1$d canciones · En tu dispositivo</string>
+    <plurals name="song_count">
+        <item quantity="one">%1$d canción · En tu dispositivo</item>
+        <item quantity="other">%1$d canciones · En tu dispositivo</item>
+    </plurals>
     <string name="shuffle_all">Mezclar</string>
     <string name="your_music">Tu colección</string>
     <string name="on_repeat">Tus favoritas</string>
@@ -57,7 +60,11 @@
     <string name="back">Volver</string>
     <string name="offline_badge">100% LOCAL</string>
     <string name="queue">Cola de reproducción</string>
-    <string name="queue_count">%1$d canciones en la cola</string>
+    <string name="queue_short">Cola</string>
+    <plurals name="queue_count">
+        <item quantity="one">%1$d canción en la cola</item>
+        <item quantity="other">%1$d canciones en la cola</item>
+    </plurals>
     <string name="seek">Posición de reproducción</string>
     <string name="volume">El volumen se ajusta con los botones del teléfono</string>
 </resources>

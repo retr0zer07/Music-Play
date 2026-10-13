@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -172,7 +173,7 @@ fun SphereApp(
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(stringResource(R.string.offline_badge), color = SphereMint, style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp)
                             Text(stringResource(R.string.your_music), fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                            Text(stringResource(R.string.song_count, state.songs.size), color = SphereMuted, style = MaterialTheme.typography.bodySmall)
+                            Text(pluralStringResource(R.plurals.song_count, state.songs.size, state.songs.size), color = SphereMuted, style = MaterialTheme.typography.bodySmall)
                             Button(
                                 onClick = { filtered.randomOrNull()?.let { onPlay(filtered, it, true) } },
                                 enabled = state.ready && filtered.isNotEmpty(),
