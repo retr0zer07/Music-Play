@@ -92,7 +92,11 @@ fun PlayerScreen(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        Scaffold(containerColor = SphereBackground, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
+        Scaffold(
+            containerColor = SphereBackground,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            snackbarHost = { SnackbarHost(snackbar) },
+        ) { padding ->
             Column(
                 Modifier.fillMaxSize()
                     .background(Brush.verticalGradient(listOf(Color(0xFF292038), SphereBackground, SphereBackground)))

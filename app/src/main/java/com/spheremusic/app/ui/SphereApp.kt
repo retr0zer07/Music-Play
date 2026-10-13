@@ -135,7 +135,7 @@ fun SphereApp(
                 Icon(painterResource(R.drawable.sphere_logo), null, Modifier.size(44.dp), tint = Color.Unspecified)
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Sphere Music", fontSize = 23.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.7).sp)
+                    Text(stringResource(R.string.app_name), fontSize = 23.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.7).sp)
                     Text(stringResource(R.string.tagline), color = SphereMuted, style = MaterialTheme.typography.bodySmall)
                 }
                 if (permission) IconButton(onRefresh, enabled = !state.loading) {
@@ -159,7 +159,7 @@ fun SphereApp(
                     placeholder = { Text(stringResource(R.string.search), style = MaterialTheme.typography.bodySmall) },
                     leadingIcon = { Icon(Icons.Rounded.Search, null) },
                     trailingIcon = {
-                        if (search.isNotEmpty()) IconButton({ search = "" }) { Icon(Icons.Rounded.Close, stringResource(R.string.close_player)) }
+                        if (search.isNotEmpty()) IconButton({ search = "" }) { Icon(Icons.Rounded.Close, stringResource(R.string.clear_search)) }
                     },
                 )
                 Spacer(Modifier.height(16.dp))

@@ -7,6 +7,7 @@
     <string name="favorites">Favoritos</string>
     <string name="songs">Canciones</string>
     <string name="search">Buscar canción, artista o álbum</string>
+    <string name="clear_search">Borrar búsqueda</string>
     <string name="refresh">Actualizar biblioteca</string>
     <string name="song_count">%1$d canciones · En tu dispositivo</string>
     <string name="shuffle_all">Mezclar</string>

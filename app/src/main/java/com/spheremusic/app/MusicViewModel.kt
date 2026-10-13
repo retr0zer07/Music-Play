@@ -50,6 +50,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val messages = Channel<Int>(Channel.BUFFERED)
     val notices = messages.receiveAsFlow()
     private var controller: MediaController? = null
+    private var cleared = false
     private var scanJob: Job? = null
     private var lyricsJob: Job? = null
     private var lyricsSongId: Long? = null
@@ -69,6 +70,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         connection.addListener({
+            if (cleared) return@addListener
             try {
                 controller = connection.get().also { it.addListener(listener) }
                 mutableState.update { it.copy(ready = true) }
@@ -218,6 +220,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     override fun onCleared() {
+        cleared = true
         controller?.removeListener(listener)
         MediaController.releaseFuture(connection)
         super.onCleared()

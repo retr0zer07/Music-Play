@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,7 +25,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.spheremusic.app.data.Song
 import com.spheremusic.app.ui.SphereApp
 import com.spheremusic.app.ui.SphereTheme
 
@@ -33,7 +33,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+        )
         val audioPermission = if (Build.VERSION.SDK_INT >= 33) {
             Manifest.permission.READ_MEDIA_AUDIO
         } else {
@@ -44,13 +47,14 @@ class MainActivity : ComponentActivity() {
                 val state by model.state.collectAsStateWithLifecycle()
                 var permission by remember { mutableStateOf(hasPermission(audioPermission)) }
                 var denied by rememberSaveable { mutableStateOf(false) }
-                var pendingLyricsSong by remember { mutableStateOf<Song?>(null) }
+                var pendingLyricsSongId by rememberSaveable { mutableStateOf<Long?>(null) }
+                var selectedLyricsUri by rememberSaveable { mutableStateOf<String?>(null) }
                 val requestPermission = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestPermission(),
                 ) { granted -> permission = granted; denied = !granted }
                 val selectLyrics = rememberLauncherForActivityResult(
                     ActivityResultContracts.OpenDocument(),
-                ) { uri -> pendingLyricsSong?.let { song -> uri?.let { model.linkLyrics(song, it) } } }
+                ) { uri -> selectedLyricsUri = uri?.toString() }
 
                 DisposableEffect(Unit) {
                     val observer = LifecycleEventObserver { _, event ->
@@ -60,6 +64,15 @@ class MainActivity : ComponentActivity() {
                     onDispose { lifecycle.removeObserver(observer) }
                 }
                 LaunchedEffect(permission) { if (permission) model.refresh() }
+                LaunchedEffect(state.songs, selectedLyricsUri) {
+                    val uri = selectedLyricsUri
+                    val song = state.songs.find { it.id == pendingLyricsSongId }
+                    if (uri != null && song != null) {
+                        model.linkLyrics(song, Uri.parse(uri))
+                        selectedLyricsUri = null
+                        pendingLyricsSongId = null
+                    }
+                }
                 SphereApp(
                     state = state,
                     notices = model.notices,
@@ -80,7 +93,7 @@ class MainActivity : ComponentActivity() {
                     onRepeat = model::cycleRepeat,
                     onQueuePlay = model::playQueue,
                     onLinkLyrics = { song ->
-                        pendingLyricsSong = song
+                        pendingLyricsSongId = song.id
                         selectLyrics.launch(arrayOf("*/*"))
                     },
                 )

@@ -27,7 +27,20 @@ class PlaybackService : MediaSessionService() {
             this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        session = MediaSession.Builder(this, player).setSessionActivity(activity).build()
+        session = MediaSession.Builder(this, player)
+            .setSessionActivity(activity)
+            .setCallback(object : MediaSession.Callback {
+                override fun onConnect(
+                    session: MediaSession,
+                    controller: MediaSession.ControllerInfo,
+                ): MediaSession.ConnectionResult =
+                    if (controller.isTrusted || controller.packageName == packageName) {
+                        super.onConnect(session, controller)
+                    } else {
+                        MediaSession.ConnectionResult.reject()
+                    }
+            })
+            .build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
