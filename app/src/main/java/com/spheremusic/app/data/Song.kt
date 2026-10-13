@@ -13,6 +13,8 @@ data class Song(
     val albumId: Long,
     val durationMs: Long,
     val artworkUri: Uri?,
+    val fileName: String = "",
+    val dateAddedSeconds: Long = 0,
 ) {
     fun toMediaItem(): MediaItem = MediaItem.Builder()
         .setMediaId(id.toString())

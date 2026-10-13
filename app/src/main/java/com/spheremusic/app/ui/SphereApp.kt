@@ -32,6 +32,8 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Shuffle
+import androidx.compose.material.icons.rounded.Sort
+import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,6 +48,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,6 +71,7 @@ import androidx.compose.ui.unit.sp
 import com.spheremusic.app.MusicState
 import com.spheremusic.app.R
 import com.spheremusic.app.data.Song
+import com.spheremusic.app.data.SongOrder
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -88,19 +93,27 @@ fun SphereApp(
     onRepeat: () -> Unit,
     onQueuePlay: (Int) -> Unit,
     onLinkLyrics: (Song) -> Unit,
+    onQueueMove: (Long, Long) -> Unit,
+    onSongOrder: (SongOrder) -> Unit,
+    onLyricsFolder: () -> Unit,
 ) {
     var section by rememberSaveable { mutableStateOf(0) }
     var search by rememberSaveable { mutableStateOf("") }
     var selectedAlbum by rememberSaveable { mutableStateOf<Long?>(null) }
     var playerOpen by rememberSaveable { mutableStateOf(false) }
+    var sortOpen by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     LaunchedEffect(notices) { notices.collect { snackbar.showSnackbar(context.getString(it)) } }
-    val filtered = remember(state.songs, state.favorites, section, search, selectedAlbum) {
-        state.songs.filter {
+    val collection = remember(state.songs, state.favorites, state.songOrder, section, selectedAlbum) {
+        state.songOrder.sorted(state.songs.filter {
             (section != 2 || it.id in state.favorites) &&
-                (section != 1 || selectedAlbum == null || it.albumId == selectedAlbum) &&
-                (search.isBlank() || listOf(it.title, it.artist, it.album).any { value -> value.contains(search.trim(), ignoreCase = true) })
+                (section != 1 || selectedAlbum == null || it.albumId == selectedAlbum)
+        })
+    }
+    val filtered = remember(collection, search) {
+        collection.filter {
+            search.isBlank() || listOf(it.title, it.artist, it.album).any { value -> value.contains(search.trim(), ignoreCase = true) }
         }
     }
     Scaffold(
@@ -135,6 +148,9 @@ fun SphereApp(
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.app_name), fontSize = 23.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.7).sp)
                     Text(stringResource(R.string.tagline), color = SphereMuted, style = MaterialTheme.typography.bodySmall)
+                }
+                if (permission) IconButton(onLyricsFolder) {
+                    Icon(Icons.Rounded.FolderOpen, stringResource(R.string.lyrics_folder), tint = SpherePurple)
                 }
                 if (permission) IconButton(onRefresh, enabled = !state.loading) {
                     Icon(Icons.Rounded.Refresh, stringResource(R.string.refresh), tint = SphereMuted)
@@ -182,6 +198,20 @@ fun SphereApp(
                         Icon(Icons.Rounded.Shuffle, stringResource(R.string.shuffle_all), tint = SpherePurple)
                     }
                     Text(filtered.size.toString(), color = SphereMuted, style = MaterialTheme.typography.labelMedium)
+                    Box {
+                        IconButton({ sortOpen = true }) { Icon(Icons.Rounded.Sort, stringResource(R.string.sort)) }
+                        DropdownMenu(expanded = sortOpen, onDismissRequest = { sortOpen = false }) {
+                            SongOrder.entries.forEach { order ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(if (order == SongOrder.RECENT) R.string.sort_recent else R.string.sort_title)) },
+                                    onClick = { onSongOrder(order); sortOpen = false },
+                                    trailingIcon = {
+                                        if (order == state.songOrder) Text("✓", color = SpherePurple)
+                                    },
+                                )
+                            }
+                        }
+                    }
                     if (state.loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                 }
                 when {
@@ -220,7 +250,7 @@ fun SphereApp(
                         items(filtered, key = { it.id }) { song ->
                             SongRow(
                                 song, song.id in state.favorites, song.id == state.current?.id,
-                                onPlay = { if (state.ready) { onPlay(filtered, song, false); playerOpen = true } },
+                                onPlay = { if (state.ready) { onPlay(collection, song, state.shuffle); playerOpen = true } },
                                 onFavorite = { onFavorite(song) },
                             )
                         }
@@ -233,6 +263,7 @@ fun SphereApp(
         PlayerScreen(
             state, snackbar, { playerOpen = false }, onFavorite, onToggle, onNext,
             onPrevious, onSeek, onShuffle, onRepeat, onQueuePlay, onLinkLyrics,
+            onQueueMove, onLyricsFolder,
         )
     }
 }

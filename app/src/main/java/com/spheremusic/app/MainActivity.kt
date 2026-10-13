@@ -57,6 +57,9 @@ class MainActivity : ComponentActivity() {
                 val selectLyrics = rememberLauncherForActivityResult(
                     ActivityResultContracts.OpenDocument(),
                 ) { uri -> selectedLyricsUri = uri?.toString() }
+                val selectLyricsFolder = rememberLauncherForActivityResult(
+                    ActivityResultContracts.OpenDocumentTree(),
+                ) { uri -> uri?.let(model::setLyricsFolder) }
 
                 DisposableEffect(Unit) {
                     val observer = LifecycleEventObserver { _, event ->
@@ -94,6 +97,9 @@ class MainActivity : ComponentActivity() {
                     onShuffle = model::toggleShuffle,
                     onRepeat = model::cycleRepeat,
                     onQueuePlay = model::playQueue,
+                    onQueueMove = model::moveQueue,
+                    onSongOrder = model::setSongOrder,
+                    onLyricsFolder = { selectLyricsFolder.launch(state.lyricsFolder?.let(Uri::parse)) },
                     onLinkLyrics = { song ->
                         pendingLyricsSongId = song.id
                         selectLyrics.launch(arrayOf("*/*"))

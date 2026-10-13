@@ -12,9 +12,14 @@ cuando el archivo no tiene una portada disponible.
 - Barra de hora/batería oculta (reaparece temporalmente al deslizar desde arriba).
   Reproductor desplazable en pantallas pequeñas, horizontal o con letras grandes.
 - Favoritos guardados localmente.
+- Orden predeterminado por fecha de incorporación a Android (más reciente
+  primero), con opción A–Z. La elección se recuerda; no cambia una cola activa.
 - Reproducción en segundo plano, notificación multimedia y controles de pantalla
   bloqueada; pausa al desconectar auriculares y gestión del foco de audio.
 - Cola de reproducción, avance/retroceso, búsqueda temporal, mezcla y repetición.
+- Arrastra el asa a la derecha de una canción en **Cola** para reordenarla, con
+  desplazamiento automático en los bordes. TalkBack ofrece subir/bajar.
+  Reordenar desactiva mezcla para respetar el orden manual, sin reiniciar el audio.
 - Portadas de álbum disponibles en MediaStore.
 - Letras incrustadas **USLT en MP3 ID3v2.3/v2.4**, o archivos `.lrc` / `.txt`
   vinculados desde el selector de archivos.
@@ -63,10 +68,33 @@ disponibles, aparece una portada generada por la app. Para letras externas:
 3. La vinculación permanece guardada para esa canción. Puedes cambiarla
    seleccionando otro archivo.
 
+### Letras automáticas por nombre
+
+Toca la carpeta en la cabecera o **Carpeta de letras automáticas** en Letras.
+Autoriza una carpeta una sola vez: se buscan archivos `.lrc` en ella y sus
+subcarpetas, con permiso recordado. Se compara primero el nombre del archivo
+de audio sin extensión y luego su título, sin distinguir mayúsculas. Ejemplo:
+`Mi tema.mp3` → `Mi tema.lrc`. Se conserva la puntuación y se normaliza Unicode.
+Si dos archivos tienen el mismo nombre, vincula uno manualmente para evitar
+mostrar una letra incorrecta. Los vínculos manuales tienen prioridad; después
+van los LRC automáticos y, si no hay coincidencia, las letras incrustadas.
+Toca actualizar si añades letras a la carpeta. Si revocas el permiso o borras
+archivos vinculados, la app avisa; vuelve a seleccionar la carpeta/archivo.
+
 El selector admite proveedores locales y de documentos. El límite es **1 MB**;
 se admiten UTF-8 y UTF-16 con BOM. Android moderno restringe el acceso directo
-a archivos vecinos al audio: **no se buscan automáticamente archivos `.lrc`**
-ni se solicita acceso total al almacenamiento.
+a archivos vecinos al audio: solo se buscan automáticamente `.lrc` dentro de
+la carpeta autorizada y no se solicita acceso total al almacenamiento. Android
+puede impedir seleccionar la raíz de almacenamiento o Descargas; usa una
+subcarpeta como `Music/Letras` y concede acceso mediante el selector.
+
+La búsqueda no limita la cola al resultado visible: al seleccionar una canción
+se carga la colección actual (biblioteca, álbum o favoritos) para poder activar
+la mezcla dentro del reproductor. La selección de mezcla se conserva al elegir
+otra canción durante la sesión.
+
+El logo e icono adaptativo se generan a partir de `logo.svg`, conservando sus
+formas, colores y degradado. Android 13+ también admite icono temático.
 
 Ejemplo de LRC (texto original de demostración):
 

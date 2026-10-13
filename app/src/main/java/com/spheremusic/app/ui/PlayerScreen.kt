@@ -91,6 +91,8 @@ fun PlayerScreen(
     onRepeat: () -> Unit,
     onQueuePlay: (Int) -> Unit,
     onLinkLyrics: (Song) -> Unit,
+    onQueueMove: (Long, Long) -> Unit = { _, _ -> },
+    onLyricsFolder: () -> Unit = {},
 ) {
     val song = state.current ?: return
     var tab by rememberSaveable { mutableStateOf(0) }
@@ -148,20 +150,8 @@ fun PlayerScreen(
                         0 -> BoxWithConstraints(Modifier.height(contentHeight).fillMaxWidth().padding(vertical = 18.dp), contentAlignment = Alignment.Center) {
                             Artwork(song, Modifier.size(minOf(maxWidth, maxHeight)))
                         }
-                        1 -> LyricsPanel(state, Modifier.height(contentHeight), onSeek) { onLinkLyrics(song) }
-                        else -> {
-                            Column(Modifier.height(contentHeight)) {
-                                Text(pluralStringResource(R.plurals.queue_count, state.queue.size, state.queue.size), Modifier.padding(vertical = 12.dp), color = SphereMuted)
-                                LazyColumn(Modifier.weight(1f)) {
-                                    itemsIndexed(state.queue, key = { _, item -> item.id }) { index, item ->
-                                        SongRow(
-                                            item, item.id in state.favorites, item.id == song.id,
-                                            { onQueuePlay(index) }, { onFavorite(item) },
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        1 -> LyricsPanel(state, Modifier.height(contentHeight), onSeek, onLyricsFolder) { onLinkLyrics(song) }
+                        else -> QueuePanel(state, Modifier.height(contentHeight), onQueuePlay, onQueueMove, onFavorite)
                     }
                     Text(song.title, Modifier.fillMaxWidth(), fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(song.artist, Modifier.padding(top = 7.dp, bottom = 14.dp), color = SphereMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -213,7 +203,10 @@ fun PlayerScreen(
 }
 
 @Composable
-private fun LyricsPanel(state: MusicState, modifier: Modifier, onSeek: (Long) -> Unit, onLink: () -> Unit) {
+private fun LyricsPanel(
+    state: MusicState, modifier: Modifier, onSeek: (Long) -> Unit,
+    onFolder: () -> Unit, onLink: () -> Unit,
+) {
     val lyrics = state.lyrics
     val listState = rememberLazyListState()
     val active = lyrics?.activeIndex(state.positionMs) ?: -1
@@ -246,6 +239,10 @@ private fun LyricsPanel(state: MusicState, modifier: Modifier, onSeek: (Long) ->
         }
         OutlinedButton(onLink, Modifier.padding(vertical = 8.dp)) {
             Text(stringResource(R.string.link_lyrics), style = MaterialTheme.typography.labelMedium)
+        }
+        OutlinedButton(onFolder) {
+            Text(stringResource(if (state.lyricsFolder == null) R.string.lyrics_folder else R.string.lyrics_folder_change),
+                style = MaterialTheme.typography.labelMedium)
         }
     }
 }

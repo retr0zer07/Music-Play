@@ -15,6 +15,8 @@ import androidx.media3.session.SessionToken
 import com.spheremusic.app.data.Lyrics
 import com.spheremusic.app.data.MusicRepository
 import com.spheremusic.app.data.Song
+import com.spheremusic.app.data.SongOrder
+import com.spheremusic.app.data.AmbiguousLyricsException
 import com.spheremusic.app.playback.PlaybackService
 import java.io.IOException
 import java.util.concurrent.ExecutionException
@@ -41,11 +43,16 @@ data class MusicState(
     val lyrics: Lyrics? = null,
     val lyricsLoading: Boolean = false,
     val queue: List<Song> = emptyList(),
+    val songOrder: SongOrder = SongOrder.RECENT,
+    val lyricsFolder: String? = null,
 )
 
 class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = MusicRepository(application)
-    private val mutableState = MutableStateFlow(MusicState(favorites = repository.favorites()))
+    private val mutableState = MutableStateFlow(MusicState(
+        favorites = repository.favorites(), songOrder = repository.songOrder(),
+        lyricsFolder = repository.lyricsFolder(),
+    ))
     val state = mutableState.asStateFlow()
     private val messages = Channel<Int>(Channel.BUFFERED)
     val notices = messages.receiveAsFlow()
@@ -95,8 +102,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         scanJob = viewModelScope.launch {
             mutableState.update { it.copy(loading = true) }
             try {
+                repository.invalidateLyricsIndex()
                 val songs = repository.songs()
                 mutableState.update { it.copy(songs = songs) }
+                lyricsSongId = null
                 syncPlayer()
             } catch (error: SecurityException) {
                 report(R.string.library_error, error)
@@ -147,6 +156,46 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun playQueue(index: Int) {
         controller?.let { it.seekToDefaultPosition(index); it.play() }
+    }
+
+    fun moveQueue(songId: Long, targetId: Long) {
+        val player = controller ?: return
+        val from = (0 until player.mediaItemCount).firstOrNull { player.getMediaItemAt(it).mediaId == songId.toString() }
+            ?: return
+        val to = (0 until player.mediaItemCount).firstOrNull { player.getMediaItemAt(it).mediaId == targetId.toString() }
+            ?: return
+        if (from == to) return
+        if (player.shuffleModeEnabled) {
+            player.shuffleModeEnabled = false
+            viewModelScope.launch { messages.send(R.string.queue_manual_order) }
+        }
+        player.moveMediaItem(from, to)
+        syncPlayer()
+    }
+
+    fun setSongOrder(order: SongOrder) {
+        repository.saveSongOrder(order)
+        mutableState.update { it.copy(songOrder = order) }
+    }
+
+    fun setLyricsFolder(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                repository.setLyricsFolder(uri)
+                mutableState.update { it.copy(lyricsFolder = repository.lyricsFolder()) }
+                lyricsSongId = null
+                syncPlayer()
+                messages.send(R.string.lyrics_folder_saved)
+            } catch (error: IOException) {
+                report(R.string.lyrics_folder_error, error)
+            } catch (error: SecurityException) {
+                report(R.string.lyrics_folder_error, error)
+            } catch (error: AmbiguousLyricsException) {
+                report(R.string.lyrics_ambiguous, error)
+            } catch (error: IllegalArgumentException) {
+                report(R.string.lyrics_folder_error, error)
+            }
+        }
     }
 
     fun toggleFavorite(song: Song) {
