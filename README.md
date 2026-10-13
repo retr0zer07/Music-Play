@@ -147,6 +147,11 @@ del LRC desplazó la reproducción a su marca exacta de 30 segundos. GitHub Acti
 ejecuta las 11 pruebas unitarias, lint y la compilación del APK. Esto no sustituye
 la comprobación de todos los dispositivos y casos de la lista anterior.
 
+En 0.1.1 se añadieron pruebas instrumentadas del índice de audio completo y del
+orden de los controles (sin solaparse con las pestañas). El reproductor también
+se verifica en vertical y horizontal con un WAV silencioso temporal, restaurando
+la orientación original del dispositivo al terminar.
+
 La app solo accede al audio autorizado y a los documentos seleccionados.
 Favoritos y vínculos se guardan en preferencias privadas, sin copia de seguridad.
 No incluye música, portadas comerciales ni letras protegidas: usa tus propios

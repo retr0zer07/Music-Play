@@ -102,6 +102,9 @@ fun PlayerScreen(
         val view = LocalView.current
         DisposableEffect(view) {
             val window = checkNotNull(view.parent as? DialogWindowProvider).window
+            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+            window.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT)
+            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.rgb(12, 11, 18)))
             window.hideStatusBar()
             val focusListener = android.view.ViewTreeObserver.OnWindowFocusChangeListener { focused ->
                 if (focused) window.hideStatusBar()
