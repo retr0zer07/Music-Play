@@ -3,8 +3,6 @@ package com.spheremusic.app.ui
 import android.net.Uri
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.test.assertDoesNotExist
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick

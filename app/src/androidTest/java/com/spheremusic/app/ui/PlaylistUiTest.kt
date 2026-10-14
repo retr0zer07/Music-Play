@@ -2,7 +2,6 @@ package com.spheremusic.app.ui
 
 import android.net.Uri
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
