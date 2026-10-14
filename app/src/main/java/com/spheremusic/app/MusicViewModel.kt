@@ -356,77 +356,78 @@ class MusicViewModel(application: Application, private val savedState: SavedStat
                 mutableState.update { it.copy(lyricsLoading = false) }
             }
 
-            fun startLyricsSearch(song: Song, clipboardText: String?) {
-                savedState["lyrics_search_id"] = song.id
-                savedState["lyrics_search_title"] = song.title
-                savedState["lyrics_search_before"] = clipboardText?.let(CopiedLyrics::fingerprint)
-                savedState["lyrics_search_away"] = false
-                mutableState.update { it.copy(lyricsImport = null) }
-            }
+        }
+    }
 
-            fun lyricsSearchLeftApp() {
-                if (savedState.get<Long>("lyrics_search_id") != null) savedState["lyrics_search_away"] = true
-            }
+    fun startLyricsSearch(song: Song, clipboardText: String?) {
+        savedState["lyrics_search_id"] = song.id
+        savedState["lyrics_search_title"] = song.title
+        savedState["lyrics_search_before"] = clipboardText?.let(CopiedLyrics::fingerprint)
+        savedState["lyrics_search_away"] = false
+        mutableState.update { it.copy(lyricsImport = null) }
+    }
 
-            fun awaitingCopiedLyrics(): Boolean = savedState.get<Boolean>("lyrics_search_away") == true
+    fun lyricsSearchLeftApp() {
+        if (savedState.get<Long>("lyrics_search_id") != null) savedState["lyrics_search_away"] = true
+    }
 
-            fun receiveCopiedLyrics(text: String?) {
-                if (!awaitingCopiedLyrics() || state.value.lyricsImport != null) return
-                val id = savedState.get<Long>("lyrics_search_id") ?: return
-                val title = savedState.get<String>("lyrics_search_title") ?: return
-                if (text.isNullOrBlank() || CopiedLyrics.fingerprint(text) == savedState.get<String>("lyrics_search_before")) {
-                    mutableState.update { it.copy(lyricsImport = LyricsImport(id, title, "")) }
-                    return
+    fun awaitingCopiedLyrics(): Boolean = savedState.get<Boolean>("lyrics_search_away") == true
+
+    fun receiveCopiedLyrics(text: String?) {
+        if (!awaitingCopiedLyrics() || state.value.lyricsImport != null) return
+        val id = savedState.get<Long>("lyrics_search_id") ?: return
+        val title = savedState.get<String>("lyrics_search_title") ?: return
+        if (text.isNullOrBlank() || CopiedLyrics.fingerprint(text) == savedState.get<String>("lyrics_search_before")) {
+            mutableState.update { it.copy(lyricsImport = LyricsImport(id, title, "")) }
+            return
+        }
+        try {
+            CopiedLyrics.validate(text)
+            mutableState.update { it.copy(lyricsImport = LyricsImport(id, title, text)) }
+        } catch (error: IllegalArgumentException) {
+            report(R.string.invalid_lyrics, error)
+            mutableState.update { it.copy(lyricsImport = LyricsImport(id, title, "")) }
+        }
+    }
+
+    fun cancelLyricsSearch() {
+        savedState.remove<Long>("lyrics_search_id")
+        savedState.remove<String>("lyrics_search_title")
+        savedState.remove<String>("lyrics_search_before")
+        savedState.remove<Boolean>("lyrics_search_away")
+        mutableState.update { it.copy(lyricsImport = null) }
+    }
+
+    fun lyricsSearchError(error: Exception) {
+        cancelLyricsSearch()
+        report(R.string.lyrics_search_error, error)
+    }
+
+    fun clipboardError(error: Exception) = report(R.string.invalid_lyrics, error)
+
+    fun saveCopiedLyrics(text: String) {
+        val target = state.value.lyricsImport ?: return
+        if (state.value.lyricsSaving) return
+        mutableState.update { it.copy(lyricsSaving = true) }
+        viewModelScope.launch {
+            try {
+                require(state.value.songs.any { it.id == target.songId }) { "Song no longer exists" }
+                val lyrics = repository.saveCopiedLyrics(target.songId, text)
+                if (state.value.current?.id == target.songId) {
+                    lyricsJob?.cancel()
+                    lyricsSongId = target.songId
+                    mutableState.update { it.copy(lyrics = lyrics, lyricsLoading = false) }
                 }
-                try {
-                    CopiedLyrics.validate(text)
-                    mutableState.update { it.copy(lyricsImport = LyricsImport(id, title, text)) }
-                } catch (error: IllegalArgumentException) {
-                    report(R.string.invalid_lyrics, error)
-                    mutableState.update { it.copy(lyricsImport = LyricsImport(id, title, "")) }
-                }
-            }
-
-            fun cancelLyricsSearch() {
-                savedState.remove<Long>("lyrics_search_id")
-                savedState.remove<String>("lyrics_search_title")
-                savedState.remove<String>("lyrics_search_before")
-                savedState.remove<Boolean>("lyrics_search_away")
-                mutableState.update { it.copy(lyricsImport = null) }
-            }
-
-            fun lyricsSearchError(error: Exception) {
                 cancelLyricsSearch()
-                report(R.string.lyrics_search_error, error)
-            }
-
-            fun clipboardError(error: Exception) = report(R.string.invalid_lyrics, error)
-
-            fun saveCopiedLyrics(text: String) {
-                val target = state.value.lyricsImport ?: return
-                if (state.value.lyricsSaving) return
-                mutableState.update { it.copy(lyricsSaving = true) }
-                viewModelScope.launch {
-                    try {
-                        require(state.value.songs.any { it.id == target.songId }) { "Song no longer exists" }
-                        val lyrics = repository.saveCopiedLyrics(target.songId, text)
-                        if (state.value.current?.id == target.songId) {
-                            lyricsJob?.cancel()
-                            lyricsSongId = target.songId
-                            mutableState.update { it.copy(lyrics = lyrics, lyricsLoading = false) }
-                        }
-                        cancelLyricsSearch()
-                        messages.send(R.string.lyrics_copied_saved)
-                    } catch (error: IllegalArgumentException) {
-                        report(R.string.invalid_lyrics, error)
-                    } catch (error: IOException) {
-                        report(R.string.lyrics_save_error, error)
-                    } catch (error: SecurityException) {
-                        report(R.string.lyrics_save_error, error)
-                    } finally {
-                        mutableState.update { it.copy(lyricsSaving = false) }
-                    }
-                }
+                messages.send(R.string.lyrics_copied_saved)
+            } catch (error: IllegalArgumentException) {
+                report(R.string.invalid_lyrics, error)
+            } catch (error: IOException) {
+                report(R.string.lyrics_save_error, error)
+            } catch (error: SecurityException) {
+                report(R.string.lyrics_save_error, error)
+            } finally {
+                mutableState.update { it.copy(lyricsSaving = false) }
             }
         }
     }
