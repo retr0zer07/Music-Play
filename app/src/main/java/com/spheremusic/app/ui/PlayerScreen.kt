@@ -33,6 +33,7 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Shuffle
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.CircularProgressIndicator
@@ -92,6 +93,7 @@ fun PlayerScreen(
     onLinkLyrics: (Song) -> Unit,
     onQueueMove: (Long, Long) -> Unit = { _, _ -> },
     onLyricsFolder: () -> Unit = {},
+    onSongActions: (Song) -> Unit = {},
 ) {
     val song = state.current ?: return
     var tab by rememberSaveable { mutableStateOf(0) }
@@ -139,6 +141,9 @@ fun PlayerScreen(
                             style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp, color = SphereMuted,
                         )
                         FavoriteButton(song.id in state.favorites) { onFavorite(song) }
+                        IconButton({ onSongActions(song) }) {
+                            Icon(Icons.Rounded.MoreVert, stringResource(R.string.song_actions, song.title))
+                        }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
                         listOf(R.string.cover, R.string.lyrics, R.string.queue_short).forEachIndexed { index, label ->
@@ -150,7 +155,7 @@ fun PlayerScreen(
                             Artwork(song, Modifier.size(minOf(maxWidth, maxHeight)))
                         }
                         1 -> LyricsPanel(state, Modifier.height(contentHeight), onSeek, onLyricsFolder) { onLinkLyrics(song) }
-                        else -> QueuePanel(state, Modifier.height(contentHeight), onQueuePlay, onQueueMove, onFavorite)
+                        else -> QueuePanel(state, Modifier.height(contentHeight), onQueuePlay, onQueueMove, onFavorite, onSongActions)
                     }
                     Text(song.title, Modifier.fillMaxWidth(), fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(song.artist, Modifier.padding(top = 7.dp, bottom = 14.dp), color = SphereMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -239,12 +244,14 @@ private fun LyricsPanel(
                 }
             }
         }
-        OutlinedButton(onLink, Modifier.padding(vertical = 8.dp)) {
-            Text(stringResource(R.string.link_lyrics), style = MaterialTheme.typography.labelMedium)
-        }
-        OutlinedButton(onFolder) {
-            Text(stringResource(if (state.lyricsFolder == null) R.string.lyrics_folder else R.string.lyrics_folder_change),
-                style = MaterialTheme.typography.labelMedium)
+        if (lyrics == null && !state.lyricsLoading) {
+            OutlinedButton(onLink, Modifier.padding(vertical = 8.dp)) {
+                Text(stringResource(R.string.link_lyrics), style = MaterialTheme.typography.labelMedium)
+            }
+            OutlinedButton(onFolder) {
+                Text(stringResource(if (state.lyricsFolder == null) R.string.lyrics_folder else R.string.lyrics_folder_change),
+                    style = MaterialTheme.typography.labelMedium)
+            }
         }
     }
 }

@@ -48,6 +48,22 @@ class MusicRepository(private val context: Context) {
         preferences.edit().putStringSet("favorites", ids.map { it.toString() }.toSet()).apply()
     }
 
+    fun forgetSong(id: Long) {
+        saveFavorites(favorites() - id)
+        preferences.edit().remove("lyrics_$id").apply()
+    }
+
+    suspend fun audioExists(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        val cursor = context.contentResolver.query(uri, arrayOf(MediaStore.Audio.Media._ID), null, null, null)
+            ?: throw IOException("Cannot verify audio deletion")
+        cursor.use { it.moveToFirst() }
+    }
+
+    suspend fun deleteAudio(uri: Uri) = withContext(Dispatchers.IO) {
+        context.contentResolver.delete(uri, null, null)
+        if (audioExists(uri)) throw IOException("Audio was not deleted")
+    }
+
     suspend fun songs(): List<Song> = withContext(Dispatchers.IO) {
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val columns = mutableListOf(

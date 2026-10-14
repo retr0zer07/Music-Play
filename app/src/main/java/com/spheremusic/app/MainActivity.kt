@@ -2,6 +2,7 @@ package com.spheremusic.app
 
 import android.Manifest
 import android.content.Intent
+import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -13,6 +14,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.viewModels
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +53,7 @@ class MainActivity : ComponentActivity() {
                 var denied by rememberSaveable { mutableStateOf(false) }
                 var pendingLyricsSongId by rememberSaveable { mutableStateOf<Long?>(null) }
                 var selectedLyricsUri by rememberSaveable { mutableStateOf<String?>(null) }
+                var legacyDeleteId by rememberSaveable { mutableStateOf<Long?>(null) }
                 val requestPermission = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestPermission(),
                 ) { granted -> permission = granted; denied = !granted }
@@ -60,6 +63,27 @@ class MainActivity : ComponentActivity() {
                 val selectLyricsFolder = rememberLauncherForActivityResult(
                     ActivityResultContracts.OpenDocumentTree(),
                 ) { uri -> uri?.let(model::setLyricsFolder) }
+                val deleteRequest = rememberLauncherForActivityResult(
+                    ActivityResultContracts.StartIntentSenderForResult(),
+                ) { result -> model.completeDeletion(result.resultCode == RESULT_OK) }
+                val writePermission = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission(),
+                ) { granted ->
+                    val song = state.songs.find { it.id == legacyDeleteId }
+                    legacyDeleteId = null
+                    if (granted && song != null) model.requestDeletion(song)
+                    else if (!granted) model.deletionError(SecurityException("Storage write permission denied"))
+                }
+                LaunchedEffect(model) {
+                    model.deletions.collect { sender ->
+                        try {
+                            deleteRequest.launch(IntentSenderRequest.Builder(sender).build())
+                        } catch (error: IntentSender.SendIntentException) {
+                            model.completeDeletion(false)
+                            model.deletionError(error)
+                        }
+                    }
+                }
 
                 DisposableEffect(Unit) {
                     val observer = LifecycleEventObserver { _, event ->
@@ -100,6 +124,17 @@ class MainActivity : ComponentActivity() {
                     onQueueMove = model::moveQueue,
                     onSongOrder = model::setSongOrder,
                     onLyricsFolder = { selectLyricsFolder.launch(state.lyricsFolder?.let(Uri::parse)) },
+                    onCreatePlaylist = model::createPlaylist,
+                    onRenamePlaylist = model::renamePlaylist,
+                    onDeletePlaylist = model::deletePlaylist,
+                    onAddToPlaylist = model::addToPlaylist,
+                    onRemoveFromPlaylist = model::removeFromPlaylist,
+                    onDeleteSong = { song ->
+                        if (Build.VERSION.SDK_INT <= 28 && !hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                            legacyDeleteId = song.id
+                            writePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        } else model.requestDeletion(song)
+                    },
                     onLinkLyrics = { song ->
                         pendingLyricsSongId = song.id
                         selectLyrics.launch(arrayOf("*/*"))

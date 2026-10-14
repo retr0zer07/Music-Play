@@ -12,6 +12,11 @@ cuando el archivo no tiene una portada disponible.
 - Barra de hora/batería oculta (reaparece temporalmente al deslizar desde arriba).
   Reproductor desplazable en pantallas pequeñas, horizontal o con letras grandes.
 - Favoritos guardados localmente.
+- Playlists locales: crear, renombrar, agregar/quitar canciones y eliminar listas.
+  El menú de tres puntos está disponible en la biblioteca, cola y reproductor.
+- Borrado real del audio desde ese menú, con confirmación previa y autorización
+  de Android cuando corresponde. Se limpia la cola, favoritos y playlists;
+  no se borran archivos de letras. Eliminar una playlist nunca borra sus audios.
 - Orden predeterminado por fecha de incorporación a Android (más reciente
   primero), con opción A–Z. La elección se recuerda; no cambia una cola activa.
 - Reproducción en segundo plano, notificación multimedia y controles de pantalla
@@ -65,8 +70,10 @@ disponibles, aparece una portada generada por la app. Para letras externas:
 
 1. Reproduce una canción y abre **Letras**.
 2. Toca **Vincular letras (.lrc / .txt)** y selecciona el archivo correspondiente.
-3. La vinculación permanece guardada para esa canción. Puedes cambiarla
-   seleccionando otro archivo.
+3. La vinculación permanece guardada para esa canción. Cuando hay letra, los
+   botones de vincular/cambiar carpeta se ocultan. Para sustituir una letra,
+   usa **Vincular letras** en el menú de tres puntos del reproductor; la carpeta
+   sigue disponible en la cabecera de la biblioteca.
 
 ### Letras automáticas por nombre
 
@@ -102,6 +109,25 @@ La búsqueda no limita la cola al resultado visible: al seleccionar una canción
 se carga la colección actual (biblioteca, álbum o favoritos) para poder activar
 la mezcla dentro del reproductor. La selección de mezcla se conserva al elegir
 otra canción durante la sesión.
+Al activar mezcla se genera un nuevo recorrido desde la canción actual, sin
+reiniciarla; la siguiente no será la sucesora del orden normal si hay al menos
+tres canciones. Cada canción se visita una vez por recorrido. Activar mezcla
+también desactiva repetir una sola canción; puedes volver a elegir repetición.
+
+### Playlists y borrado
+
+En **Playlists**, toca **Crear playlist** y escribe un nombre único. Desde los
+tres puntos de una canción, **Agregar a playlist** permite elegir una lista
+existente o crear una con esa canción. Las listas conservan el orden de adición,
+no duplican una canción y se guardan en el teléfono. Sus opciones permiten
+renombrarlas o eliminarlas; dentro de una lista puedes quitar una canción sin
+borrar su archivo.
+
+**Borrar del teléfono** elimina solamente el audio seleccionado. Cancelar
+cualquiera de las confirmaciones conserva el archivo y sus referencias.
+Android 11+ muestra su diálogo de borrado; Android 10 puede pedir permiso
+específico sobre el archivo. Android 8–9 requiere permiso de escritura en
+almacenamiento, solicitado únicamente al intentar borrar.
 
 El logo e icono adaptativo se generan a partir de `logo.svg`, conservando sus
 formas, colores y degradado. Android 13+ también admite icono temático.

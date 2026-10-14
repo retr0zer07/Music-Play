@@ -19,6 +19,7 @@ import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -104,7 +105,7 @@ fun FavoriteButton(favorite: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun SongRow(song: Song, favorite: Boolean, selected: Boolean, onPlay: () -> Unit, onFavorite: () -> Unit) {
+fun SongRow(song: Song, favorite: Boolean, selected: Boolean, onPlay: () -> Unit, onFavorite: () -> Unit, onMore: (() -> Unit)? = null) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
             .background(if (selected) SpherePurple.copy(alpha = 0.08f) else Color.Transparent)
@@ -123,5 +124,8 @@ fun SongRow(song: Song, favorite: Boolean, selected: Boolean, onPlay: () -> Unit
         if (selected) Icon(Icons.Rounded.GraphicEq, null, Modifier.size(20.dp), tint = SpherePurple)
         else Text(formatTime(song.durationMs), color = SphereMuted, style = MaterialTheme.typography.labelSmall)
         FavoriteButton(favorite, onFavorite)
+        if (onMore != null) IconButton(onMore) {
+            Icon(Icons.Rounded.MoreVert, stringResource(R.string.song_actions, song.title))
+        }
     }
 }

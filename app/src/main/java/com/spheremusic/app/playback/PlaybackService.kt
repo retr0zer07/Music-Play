@@ -4,7 +4,10 @@ import android.app.PendingIntent
 import android.content.Intent
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.ForwardingPlayer
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ShuffleOrder
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.spheremusic.app.MainActivity
@@ -28,7 +31,19 @@ class PlaybackService : MediaSessionService() {
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        session = MediaSession.Builder(this, player)
+        val sessionPlayer = object : ForwardingPlayer(player) {
+            override fun setShuffleModeEnabled(shuffleModeEnabled: Boolean) {
+                if (shuffleModeEnabled && !player.shuffleModeEnabled) {
+                    player.setShuffleOrder(ShuffleOrder.DefaultShuffleOrder(
+                        shuffleSequence(player.mediaItemCount, player.currentMediaItemIndex),
+                        kotlin.random.Random.nextLong(),
+                    ))
+                    if (player.repeatMode == Player.REPEAT_MODE_ONE) player.repeatMode = Player.REPEAT_MODE_OFF
+                }
+                player.shuffleModeEnabled = shuffleModeEnabled
+            }
+        }
+        session = MediaSession.Builder(this, sessionPlayer)
             .setSessionActivity(activity)
             .setCallback(object : MediaSession.Callback {
                 override fun onConnect(

@@ -44,6 +44,7 @@ fun QueuePanel(
     onPlay: (Int) -> Unit,
     onMove: (Long, Long) -> Unit,
     onFavorite: (Song) -> Unit,
+    onSongActions: ((Song) -> Unit)? = null,
 ) {
     val list = rememberLazyListState()
     val queue by rememberUpdatedState(state.queue)
@@ -98,7 +99,8 @@ fun QueuePanel(
                 ) {
                     Column(Modifier.weight(1f)) {
                         SongRow(song, song.id in state.favorites, song.id == state.current?.id,
-                            { onPlay(index) }, { onFavorite(song) })
+                            { onPlay(index) }, { onFavorite(song) },
+                            onMore = onSongActions?.let { action -> { action(song) } })
                     }
                     Icon(
                         Icons.Rounded.DragHandle,

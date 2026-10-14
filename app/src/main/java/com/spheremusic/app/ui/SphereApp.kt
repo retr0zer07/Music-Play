@@ -23,6 +23,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Album
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.LibraryMusic
@@ -36,6 +39,8 @@ import androidx.compose.material.icons.rounded.Sort
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,6 +77,7 @@ import com.spheremusic.app.MusicState
 import com.spheremusic.app.R
 import com.spheremusic.app.data.Song
 import com.spheremusic.app.data.SongOrder
+import com.spheremusic.app.data.Playlist
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -96,17 +102,39 @@ fun SphereApp(
     onQueueMove: (Long, Long) -> Unit,
     onSongOrder: (SongOrder) -> Unit,
     onLyricsFolder: () -> Unit,
+    onCreatePlaylist: (String, Long?) -> Unit,
+    onRenamePlaylist: (String, String) -> Unit,
+    onDeletePlaylist: (String) -> Unit,
+    onAddToPlaylist: (String, Long) -> Unit,
+    onRemoveFromPlaylist: (String, Long) -> Unit,
+    onDeleteSong: (Song) -> Unit,
 ) {
     var section by rememberSaveable { mutableStateOf(0) }
     var search by rememberSaveable { mutableStateOf("") }
     var selectedAlbum by rememberSaveable { mutableStateOf<Long?>(null) }
     var playerOpen by rememberSaveable { mutableStateOf(false) }
     var sortOpen by remember { mutableStateOf(false) }
+    var selectedPlaylist by rememberSaveable { mutableStateOf<String?>(null) }
+    var nameDialog by rememberSaveable { mutableStateOf(false) }
+    var renameTarget by remember { mutableStateOf<Playlist?>(null) }
+    var playlistMenu by remember { mutableStateOf<Playlist?>(null) }
+    var deletePlaylist by remember { mutableStateOf<Playlist?>(null) }
+    var actionsSong by remember { mutableStateOf<Song?>(null) }
+    var addSong by remember { mutableStateOf<Song?>(null) }
+    var createWithSong by rememberSaveable { mutableStateOf<Long?>(null) }
+    var deleteSong by remember { mutableStateOf<Song?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     LaunchedEffect(notices) { notices.collect { snackbar.showSnackbar(context.getString(it)) } }
-    val collection = remember(state.songs, state.favorites, state.songOrder, section, selectedAlbum) {
-        state.songOrder.sorted(state.songs.filter {
+    val playlist = state.playlists.find { it.id == selectedPlaylist }
+    LaunchedEffect(state.playlists, selectedPlaylist) {
+        if (selectedPlaylist != null && playlist == null) selectedPlaylist = null
+    }
+    val collection = remember(state.songs, state.favorites, state.songOrder, section, selectedAlbum, playlist) {
+        if (section == 3) {
+            val byId = state.songs.associateBy { it.id }
+            playlist?.songIds?.mapNotNull(byId::get).orEmpty()
+        } else state.songOrder.sorted(state.songs.filter {
             (section != 2 || it.id in state.favorites) &&
                 (section != 1 || selectedAlbum == null || it.albumId == selectedAlbum)
         })
@@ -126,12 +154,12 @@ fun SphereApp(
                         MiniPlayer(song, state.playing, state.positionMs, state.durationMs, { playerOpen = true }, onToggle, onNext)
                     }
                     NavigationBar(containerColor = SphereBackground) {
-                        val labels = listOf(R.string.library, R.string.albums, R.string.favorites)
-                        val icons = listOf(Icons.Rounded.LibraryMusic, Icons.Rounded.Album, Icons.Rounded.FavoriteBorder)
+                        val labels = listOf(R.string.library, R.string.albums, R.string.favorites, R.string.playlists)
+                        val icons = listOf(Icons.Rounded.LibraryMusic, Icons.Rounded.Album, Icons.Rounded.FavoriteBorder, Icons.Rounded.PlaylistPlay)
                         labels.forEachIndexed { index, label ->
                             NavigationBarItem(
                                 selected = section == index,
-                                onClick = { section = index; selectedAlbum = null },
+                                onClick = { section = index; selectedAlbum = null; selectedPlaylist = null; search = "" },
                                 icon = { Icon(icons[index], null) },
                                 label = { Text(stringResource(label)) },
                             )
@@ -178,7 +206,9 @@ fun SphereApp(
                 )
                 Spacer(Modifier.height(16.dp))
                 Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (section == 1 && selectedAlbum != null) IconButton({ selectedAlbum = null }) {
+                    if ((section == 1 && selectedAlbum != null) || (section == 3 && playlist != null)) IconButton({
+                        selectedAlbum = null; selectedPlaylist = null
+                    }) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back))
                     }
                     Text(
@@ -186,19 +216,23 @@ fun SphereApp(
                             selectedAlbum != null -> filtered.firstOrNull()?.album ?: stringResource(R.string.albums)
                             section == 1 -> stringResource(R.string.albums)
                             section == 2 -> stringResource(R.string.on_repeat)
+                            section == 3 -> playlist?.name ?: stringResource(R.string.playlists)
                             else -> stringResource(R.string.songs)
                         },
                         Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
-                    if (section == 0) IconButton(
+                    if (section == 0 || (section == 3 && playlist != null)) IconButton(
                         onClick = { filtered.randomOrNull()?.let { onPlay(filtered, it, true); playerOpen = true } },
                         enabled = state.ready && filtered.isNotEmpty(),
                     ) {
                         Icon(Icons.Rounded.Shuffle, stringResource(R.string.shuffle_all), tint = SpherePurple)
                     }
                     Text(filtered.size.toString(), color = SphereMuted, style = MaterialTheme.typography.labelMedium)
-                    Box {
+                    if (section == 3) IconButton({
+                        renameTarget = null; createWithSong = null; nameDialog = true
+                    }) { Icon(Icons.Rounded.Add, stringResource(R.string.playlist_create)) }
+                    if (section != 3) Box {
                         IconButton({ sortOpen = true }) { Icon(Icons.Rounded.Sort, stringResource(R.string.sort)) }
                         DropdownMenu(expanded = sortOpen, onDismissRequest = { sortOpen = false }) {
                             SongOrder.entries.forEach { order ->
@@ -215,16 +249,41 @@ fun SphereApp(
                     if (state.loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                 }
                 when {
+                    section == 3 && playlist == null -> {
+                        if (state.playlists.isEmpty()) {
+                            EmptyState(R.string.empty_playlists, R.string.empty_playlists_body, Modifier.weight(1f)) {
+                                Button({ renameTarget = null; createWithSong = null; nameDialog = true }) {
+                                    Text(stringResource(R.string.playlist_create))
+                                }
+                            }
+                        } else LazyColumn(Modifier.weight(1f)) {
+                            items(state.playlists.filter { search.isBlank() || it.name.contains(search.trim(), true) }, key = { it.id }) { item ->
+                                Row(Modifier.fillMaxWidth().clickable { selectedPlaylist = item.id }.padding(vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Rounded.PlaylistPlay, null, tint = SpherePurple)
+                                    Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                                        Text(item.name, fontWeight = FontWeight.Bold)
+                                        Text(item.songIds.count { id -> state.songs.any { it.id == id } }.toString(), color = SphereMuted)
+                                    }
+                                    IconButton({ playlistMenu = item }) {
+                                        Icon(Icons.Rounded.MoreVert, stringResource(R.string.playlist_actions, item.name))
+                                    }
+                                }
+                            }
+                        }
+                    }
                     state.loading && state.songs.isEmpty() -> EmptyState(R.string.loading, null, Modifier.weight(1f))
                     filtered.isEmpty() -> EmptyState(
                         when {
                             search.isNotBlank() -> R.string.no_results
                             section == 2 -> R.string.empty_favorites
+                            section == 3 -> R.string.empty_playlist
                             else -> R.string.empty_title
                         },
                         when {
                             search.isNotBlank() -> R.string.no_results_body
                             section == 2 -> R.string.empty_favorites_body
+                            section == 3 -> R.string.empty_playlist_body
                             else -> R.string.empty_body
                         },
                         Modifier.weight(1f),
@@ -252,6 +311,7 @@ fun SphereApp(
                                 song, song.id in state.favorites, song.id == state.current?.id,
                                 onPlay = { if (state.ready) { onPlay(collection, song, state.shuffle); playerOpen = true } },
                                 onFavorite = { onFavorite(song) },
+                                onMore = { actionsSong = song },
                             )
                         }
                     }
@@ -263,8 +323,48 @@ fun SphereApp(
         PlayerScreen(
             state, snackbar, { playerOpen = false }, onFavorite, onToggle, onNext,
             onPrevious, onSeek, onShuffle, onRepeat, onQueuePlay, onLinkLyrics,
-            onQueueMove, onLyricsFolder,
+            onQueueMove, onLyricsFolder, onSongActions = { actionsSong = it },
         )
+    }
+    if (nameDialog) PlaylistNameDialog(renameTarget, { nameDialog = false }) { name ->
+        val target = renameTarget
+        if (target == null) onCreatePlaylist(name, createWithSong) else onRenamePlaylist(target.id, name)
+        nameDialog = false; createWithSong = null
+    }
+    addSong?.let { song ->
+        PlaylistPicker(state.playlists, { addSong = null }, {
+            createWithSong = song.id; renameTarget = null; addSong = null; nameDialog = true
+        }) { id -> onAddToPlaylist(id, song.id); addSong = null }
+    }
+    actionsSong?.let { song ->
+        SongActionsDialog(song, section == 3 && playlist?.songIds?.contains(song.id) == true,
+            { actionsSong = null },
+            { addSong = song; actionsSong = null },
+            { playlist?.let { onRemoveFromPlaylist(it.id, song.id) }; actionsSong = null },
+            { deleteSong = song; actionsSong = null },
+            { onLinkLyrics(song); actionsSong = null },
+        )
+    }
+    playlistMenu?.let { item ->
+        AlertDialog(onDismissRequest = { playlistMenu = null }, title = { Text(item.name) },
+            text = {
+                Column {
+                    TextButton({ renameTarget = item; nameDialog = true; playlistMenu = null }) { Text(stringResource(R.string.playlist_rename)) }
+                    TextButton({ deletePlaylist = item; playlistMenu = null }) { Text(stringResource(R.string.playlist_delete)) }
+                }
+            }, confirmButton = { TextButton({ playlistMenu = null }) { Text(stringResource(R.string.close)) } })
+    }
+    deletePlaylist?.let { item ->
+        AlertDialog(onDismissRequest = { deletePlaylist = null }, title = { Text(stringResource(R.string.playlist_delete)) },
+            text = { Text(stringResource(R.string.playlist_delete_body, item.name)) },
+            confirmButton = { TextButton({ onDeletePlaylist(item.id); deletePlaylist = null }) { Text(stringResource(R.string.delete)) } },
+            dismissButton = { TextButton({ deletePlaylist = null }) { Text(stringResource(R.string.cancel)) } })
+    }
+    deleteSong?.let { song ->
+        AlertDialog(onDismissRequest = { deleteSong = null }, title = { Text(stringResource(R.string.delete_song)) },
+            text = { Text(stringResource(R.string.delete_song_body, song.title)) },
+            confirmButton = { TextButton({ onDeleteSong(song); deleteSong = null }) { Text(stringResource(R.string.delete)) } },
+            dismissButton = { TextButton({ deleteSong = null }) { Text(stringResource(R.string.cancel)) } })
     }
 }
 
