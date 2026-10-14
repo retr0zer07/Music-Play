@@ -371,7 +371,8 @@ class MusicViewModel(application: Application, private val savedState: SavedStat
         if (savedState.get<Long>("lyrics_search_id") != null) savedState["lyrics_search_away"] = true
     }
 
-    fun awaitingCopiedLyrics(): Boolean = savedState.get<Boolean>("lyrics_search_away") == true
+    fun awaitingCopiedLyrics(): Boolean =
+        savedState.get<Boolean>("lyrics_search_away") == true && state.value.lyricsImport == null
 
     fun receiveCopiedLyrics(text: String?) {
         if (!awaitingCopiedLyrics() || state.value.lyricsImport != null) return
