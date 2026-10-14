@@ -125,6 +125,8 @@ bash ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 
 El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`.
 Las pruebas cubren el parser LRC, lectura acotada de letras MP3 y formato de tiempo.
+También cubren coincidencias de nombre, prioridad de archivo sobre título,
+Unicode y rechazo de letras ambiguas.
 Con un teléfono o emulador conectado, `:app:connectedDebugAndroidTest` comprueba
 que también se incluya audio con `IS_MUSIC=0` y que la biblioteca coincida con
 todo el índice accesible de MediaStore. El test crea un WAV silencioso temporal
@@ -179,6 +181,13 @@ En 0.1.1 se añadieron pruebas instrumentadas del índice de audio completo y de
 orden de los controles (sin solaparse con las pestañas). El reproductor también
 se verifica en vertical y horizontal con un WAV silencioso temporal, restaurando
 la orientación original del dispositivo al terminar.
+
+En 0.1.2 hay 15 pruebas unitarias y 4 instrumentadas. En el teléfono se comprobó
+el orden reciente/A–Z y su persistencia, la autorización de una carpeta y la
+carga automática de LRC en subcarpetas después de reiniciar el proceso. También
+se verificó que arrastrar cambie el siguiente audio de la cola real y que mover
+la canción actual conserve identidad, estado de pausa y posición exacta de
+30 segundos. El nuevo logo SVG se comprobó visualmente en la cabecera.
 
 La app solo accede al audio autorizado y a los documentos seleccionados.
 Favoritos y vínculos se guardan en preferencias privadas, sin copia de seguridad.

@@ -56,6 +56,10 @@ class MusicRepositoryTest {
                 collection, arrayOf(MediaStore.Audio.Media._ID), null, null, null,
             )).use { it.count }
             assertEquals("Every accessible indexed audio row must be returned", indexedCount, songs.size)
+            assertTrue("MediaStore query must return recent additions first", songs.zipWithNext().all { (a, b) ->
+                a.dateAddedSeconds > b.dateAddedSeconds ||
+                    (a.dateAddedSeconds == b.dateAddedSeconds && a.id >= b.id)
+            })
         } finally {
             resolver.delete(uri, null, null)
         }

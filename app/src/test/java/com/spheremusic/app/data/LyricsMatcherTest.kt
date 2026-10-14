@@ -17,7 +17,7 @@ class LyricsMatcherTest {
         assertNull(LyricsMatcher.match("missing.mp3", "missing", index))
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test(expected = AmbiguousLyricsException::class)
     fun `duplicate basenames must not choose unrelated lyrics`() {
         LyricsMatcher.match("file.mp3", "title", mapOf("file" to listOf("one", "two")))
     }
