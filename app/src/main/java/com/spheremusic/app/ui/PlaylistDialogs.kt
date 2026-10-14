@@ -54,6 +54,7 @@ fun PlaylistPicker(playlists: List<Playlist>, onDismiss: () -> Unit, onCreate: (
 fun SongActionsDialog(
     song: Song, inPlaylist: Boolean, onDismiss: () -> Unit, onAdd: () -> Unit,
     onRemove: () -> Unit, onDelete: () -> Unit, onLinkLyrics: () -> Unit,
+    onSearchLyrics: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -63,6 +64,7 @@ fun SongActionsDialog(
                 TextButton(onAdd) { Text(stringResource(R.string.playlist_add)) }
                 if (inPlaylist) TextButton(onRemove) { Text(stringResource(R.string.playlist_remove_song)) }
                 TextButton(onLinkLyrics) { Text(stringResource(R.string.link_lyrics)) }
+                TextButton(onSearchLyrics) { Text(stringResource(R.string.search_lyrics)) }
                 TextButton(onDelete) { Text(stringResource(R.string.delete_song)) }
             }
         },

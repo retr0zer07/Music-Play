@@ -3,10 +3,14 @@ package com.spheremusic.app
 import android.Manifest
 import android.content.Intent
 import android.content.IntentSender
+import android.content.ActivityNotFoundException
+import android.content.ClipboardManager
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -30,9 +34,29 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spheremusic.app.ui.SphereApp
 import com.spheremusic.app.ui.SphereTheme
 import com.spheremusic.app.ui.hideStatusBar
+import com.spheremusic.app.data.CopiedLyrics
 
 class MainActivity : ComponentActivity() {
     private val model: MusicViewModel by viewModels()
+    private val clipboardHandler = Handler(Looper.getMainLooper())
+    private val importClipboard = Runnable {
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && model.awaitingCopiedLyrics()) {
+            model.receiveCopiedLyrics(readCopiedText())
+        }
+    }
+
+    private fun readCopiedText(): String? {
+        val clipboard = getSystemService(ClipboardManager::class.java)
+        val clip = clipboard.primaryClip ?: return null
+        if (clip.itemCount == 0) return null
+        // Never resolve clipboard URIs or request data from another app.
+        val text = clip.getItemAt(0).text ?: return null
+        if (text.length > CopiedLyrics.MAX_BYTES) {
+            model.clipboardError(IllegalArgumentException("Copied text exceeds 1 MB"))
+            return null
+        }
+        return text.toString()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,6 +112,13 @@ class MainActivity : ComponentActivity() {
                 DisposableEffect(Unit) {
                     val observer = LifecycleEventObserver { _, event ->
                         if (event == Lifecycle.Event.ON_RESUME) permission = hasPermission(audioPermission)
+                        if (event == Lifecycle.Event.ON_PAUSE) {
+                            model.lyricsSearchLeftApp()
+                            clipboardHandler.removeCallbacks(importClipboard)
+                        }
+                        if (event == Lifecycle.Event.ON_RESUME) {
+                            clipboardHandler.postDelayed(importClipboard, 600)
+                        }
                     }
                     lifecycle.addObserver(observer)
                     onDispose { lifecycle.removeObserver(observer) }
@@ -124,6 +155,21 @@ class MainActivity : ComponentActivity() {
                     onQueueMove = model::moveQueue,
                     onSongOrder = model::setSongOrder,
                     onLyricsFolder = { selectLyricsFolder.launch(state.lyricsFolder?.let(Uri::parse)) },
+                    onSearchLyrics = { song ->
+                        val uri = Uri.Builder().scheme("https").authority("www.google.com").path("search")
+                            .appendQueryParameter("q", CopiedLyrics.query(song)).build()
+                        model.startLyricsSearch(song, readCopiedText())
+                        try {
+                            startActivity(Intent(Intent.ACTION_VIEW, uri))
+                        } catch (error: ActivityNotFoundException) {
+                            model.lyricsSearchError(error)
+                        } catch (error: SecurityException) {
+                            model.lyricsSearchError(error)
+                        }
+                    },
+                    onPasteLyrics = ::readCopiedText,
+                    onSaveCopiedLyrics = model::saveCopiedLyrics,
+                    onCancelLyricsImport = model::cancelLyricsSearch,
                     onCreatePlaylist = model::createPlaylist,
                     onRenamePlaylist = model::renamePlaylist,
                     onDeletePlaylist = model::deletePlaylist,
@@ -149,6 +195,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) window.hideStatusBar()
+        if (hasFocus) {
+            window.hideStatusBar()
+            clipboardHandler.removeCallbacks(importClipboard)
+            clipboardHandler.postDelayed(importClipboard, 200)
+        }
+    }
+
+    override fun onDestroy() {
+        clipboardHandler.removeCallbacks(importClipboard)
+        super.onDestroy()
     }
 }

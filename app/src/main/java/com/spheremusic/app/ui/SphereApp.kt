@@ -108,6 +108,10 @@ fun SphereApp(
     onAddToPlaylist: (String, Long) -> Unit,
     onRemoveFromPlaylist: (String, Long) -> Unit,
     onDeleteSong: (Song) -> Unit,
+    onSearchLyrics: (Song) -> Unit = {},
+    onPasteLyrics: () -> String? = { null },
+    onSaveCopiedLyrics: (String) -> Unit = {},
+    onCancelLyricsImport: () -> Unit = {},
 ) {
     var section by rememberSaveable { mutableStateOf(0) }
     var search by rememberSaveable { mutableStateOf("") }
@@ -323,7 +327,7 @@ fun SphereApp(
         PlayerScreen(
             state, snackbar, { playerOpen = false }, onFavorite, onToggle, onNext,
             onPrevious, onSeek, onShuffle, onRepeat, onQueuePlay, onLinkLyrics,
-            onQueueMove, onLyricsFolder, onSongActions = { actionsSong = it },
+            onQueueMove, onLyricsFolder, onSongActions = { actionsSong = it }, onSearchLyrics = onSearchLyrics,
         )
     }
     if (nameDialog) PlaylistNameDialog(renameTarget, { nameDialog = false }) { name ->
@@ -343,6 +347,7 @@ fun SphereApp(
             { playlist?.let { onRemoveFromPlaylist(it.id, song.id) }; actionsSong = null },
             { deleteSong = song; actionsSong = null },
             { onLinkLyrics(song); actionsSong = null },
+            { onSearchLyrics(song); actionsSong = null },
         )
     }
     playlistMenu?.let { item ->
@@ -365,6 +370,9 @@ fun SphereApp(
             text = { Text(stringResource(R.string.delete_song_body, song.title)) },
             confirmButton = { TextButton({ onDeleteSong(song); deleteSong = null }) { Text(stringResource(R.string.delete)) } },
             dismissButton = { TextButton({ deleteSong = null }) { Text(stringResource(R.string.cancel)) } })
+    }
+    state.lyricsImport?.let { target ->
+        CopiedLyricsDialog(target, state.lyricsSaving, onCancelLyricsImport, onPasteLyrics, onSaveCopiedLyrics)
     }
 }
 

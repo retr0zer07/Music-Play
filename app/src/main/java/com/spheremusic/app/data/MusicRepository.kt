@@ -8,6 +8,8 @@ import android.provider.DocumentsContract
 import android.os.Build
 import com.spheremusic.app.R
 import java.io.IOException
+import java.io.File
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
@@ -49,8 +51,37 @@ class MusicRepository(private val context: Context) {
     }
 
     fun forgetSong(id: Long) {
+        val linked = preferences.getString("lyrics_$id", null)
         saveFavorites(favorites() - id)
         preferences.edit().remove("lyrics_$id").apply()
+        linked?.let { deletePrivateLyrics(Uri.parse(it)) }
+    }
+
+    suspend fun saveCopiedLyrics(songId: Long, text: String): Lyrics = withContext(Dispatchers.IO) {
+        val lyrics = CopiedLyrics.validate(text)
+        val directory = File(context.filesDir, "lyrics")
+        if (!directory.isDirectory && !directory.mkdirs()) throw IOException("Cannot create lyrics directory")
+        val file = File(directory, "$songId-${UUID.randomUUID()}.txt")
+        val previous = preferences.getString("lyrics_$songId", null)
+        try {
+            file.outputStream().use { it.write(text.toByteArray(Charsets.UTF_8)) }
+            if (!preferences.edit().putString("lyrics_$songId", Uri.fromFile(file).toString()).commit()) {
+                throw IOException("Cannot link copied lyrics")
+            }
+        } catch (error: IOException) {
+            if (file.exists() && !file.delete()) android.util.Log.w("SphereMusic", "Cannot clean incomplete lyrics file")
+            throw error
+        }
+        previous?.let { deletePrivateLyrics(Uri.parse(it)) }
+        lyrics
+    }
+
+    private fun deletePrivateLyrics(uri: Uri) {
+        if (uri.scheme != "file") return
+        val path = uri.path ?: return
+        val file = File(path)
+        if (file.parentFile != File(context.filesDir, "lyrics")) return
+        if (file.exists() && !file.delete()) android.util.Log.w("SphereMusic", "Cannot remove previous private lyrics")
     }
 
     suspend fun audioExists(uri: Uri): Boolean = withContext(Dispatchers.IO) {
@@ -196,7 +227,9 @@ class MusicRepository(private val context: Context) {
     suspend fun linkLyrics(song: Song, uri: Uri): Lyrics = withContext(Dispatchers.IO) {
         val lyrics = readExternal(uri) ?: throw IllegalArgumentException("Empty lyrics")
         context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val previous = preferences.getString("lyrics_${song.id}", null)
         preferences.edit().putString("lyrics_${song.id}", uri.toString()).apply()
+        previous?.let { if (it != uri.toString()) deletePrivateLyrics(Uri.parse(it)) }
         lyrics
     }
 

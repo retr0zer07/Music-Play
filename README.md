@@ -30,6 +30,9 @@ cuando el archivo no tiene una portada disponible.
   vinculados desde el selector de archivos.
 - Letras LRC sincronizadas, múltiples marcas de tiempo, offsets y salto al tocar
   una línea. Letras sin marcas de tiempo se muestran como texto.
+- **Buscar letra** abre Google en tu navegador con `lyric + título + artista`.
+  Copia el texto que quieras y vuelve a Sphere Music para revisarlo, editarlo
+  y guardarlo como letra de la canción buscada.
 - Sin anuncios, cuentas, servidores ni permiso de Internet.
 
 ## Descargar e instalar en Android
@@ -104,6 +107,27 @@ a archivos vecinos al audio: solo se buscan automáticamente `.lrc` dentro de
 la carpeta autorizada y no se solicita acceso total al almacenamiento. Android
 puede impedir seleccionar la raíz de almacenamiento o Descargas; usa una
 subcarpeta como `Music/Letras` y concede acceso mediante el selector.
+
+### Buscar y guardar texto copiado
+
+En Letras, cuando no hay letra cargada, **Buscar letra** aparece junto a vincular
+y cambiar carpeta. También está en el menú de tres puntos, incluso si ya hay
+letra. Google recibe solamente la búsqueda `lyric + título + artista` mediante
+el navegador externo; Sphere Music no descarga ni extrae texto de páginas web.
+
+Selecciona y copia el texto en el navegador, luego regresa a la app. Aparece
+una vista previa editable vinculada a la canción que buscaste, aunque haya
+avanzado la reproducción. Toca **Guardar** para crear un `.txt` UTF-8 privado
+de Sphere Music (máximo 1 MB). Tiene prioridad como letra vinculada y permanece
+tras reiniciar. No modifica el audio ni sobrescribe archivos LRC/TXT externos.
+Sin marcas de tiempo se muestra texto; no se generan tiempos automáticamente.
+Los archivos privados desaparecen al desinstalar o borrar los datos de la app.
+
+El portapapeles se consulta solamente al iniciar una búsqueda, al volver con
+una búsqueda pendiente o al tocar **Pegar texto copiado** en la vista previa;
+nunca en segundo plano ni fuera de ese flujo. Si no hay texto nuevo, no se
+importa el contenido anterior automáticamente. Puedes pegar explícitamente,
+editar o cancelar sin cambiar la letra anterior.
 
 La búsqueda no limita la cola al resultado visible: al seleccionar una canción
 se carga la colección actual (biblioteca, álbum o favoritos) para poder activar

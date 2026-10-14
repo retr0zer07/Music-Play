@@ -94,6 +94,7 @@ fun PlayerScreen(
     onQueueMove: (Long, Long) -> Unit = { _, _ -> },
     onLyricsFolder: () -> Unit = {},
     onSongActions: (Song) -> Unit = {},
+    onSearchLyrics: (Song) -> Unit = {},
 ) {
     val song = state.current ?: return
     var tab by rememberSaveable { mutableStateOf(0) }
@@ -154,7 +155,8 @@ fun PlayerScreen(
                         0 -> BoxWithConstraints(Modifier.height(contentHeight).fillMaxWidth().padding(vertical = 18.dp), contentAlignment = Alignment.Center) {
                             Artwork(song, Modifier.size(minOf(maxWidth, maxHeight)))
                         }
-                        1 -> LyricsPanel(state, Modifier.height(contentHeight), onSeek, onLyricsFolder) { onLinkLyrics(song) }
+                        1 -> LyricsPanel(state, Modifier.height(contentHeight), onSeek, onLyricsFolder,
+                            { onSearchLyrics(song) }, { onLinkLyrics(song) })
                         else -> QueuePanel(state, Modifier.height(contentHeight), onQueuePlay, onQueueMove, onFavorite, onSongActions)
                     }
                     Text(song.title, Modifier.fillMaxWidth(), fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -209,7 +211,7 @@ fun PlayerScreen(
 @Composable
 private fun LyricsPanel(
     state: MusicState, modifier: Modifier, onSeek: (Long) -> Unit,
-    onFolder: () -> Unit, onLink: () -> Unit,
+    onFolder: () -> Unit, onSearch: () -> Unit, onLink: () -> Unit,
 ) {
     val lyrics = state.lyrics
     val listState = rememberLazyListState()
@@ -251,6 +253,9 @@ private fun LyricsPanel(
             OutlinedButton(onFolder) {
                 Text(stringResource(if (state.lyricsFolder == null) R.string.lyrics_folder else R.string.lyrics_folder_change),
                     style = MaterialTheme.typography.labelMedium)
+            }
+            OutlinedButton(onSearch, Modifier.padding(top = 8.dp)) {
+                Text(stringResource(R.string.search_lyrics), style = MaterialTheme.typography.labelMedium)
             }
         }
     }

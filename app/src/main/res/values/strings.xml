@@ -72,6 +72,16 @@
     <string name="cover">Portada</string>
     <string name="cover_description">Portada de %1$s</string>
     <string name="link_lyrics">Vincular letras (.lrc / .txt)</string>
+    <string name="search_lyrics">Buscar letra</string>
+    <string name="lyrics_search_error">No se pudo abrir el navegador para buscar la letra.</string>
+    <string name="lyrics_import_title">Guardar letra de %1$s</string>
+    <string name="lyrics_import_help">Revisa y edita el texto antes de guardarlo. Se crea un archivo privado de Sphere Music para esta canción, sin modificar tus archivos existentes. Esta será la letra que mostrará la canción.</string>
+    <string name="lyrics_clipboard_empty">No hay texto nuevo copiado. Copia la letra en el navegador y vuelve, o usa Pegar texto copiado.</string>
+    <string name="paste_lyrics">Pegar texto copiado</string>
+    <string name="lyrics_preview">Texto de la letra</string>
+    <string name="lyrics_saving">Guardando…</string>
+    <string name="lyrics_copied_saved">Letra guardada en esta canción</string>
+    <string name="lyrics_save_error">No se pudo guardar la letra. Revisa el espacio disponible e inténtalo otra vez.</string>
     <string name="no_lyrics">Cada canción tiene una historia</string>
     <string name="no_lyrics_body">Vincula un archivo .lrc para seguir la letra al ritmo de la música, o un .txt para leerla. También leemos letras USLT incrustadas en archivos MP3.</string>
     <string name="lyrics_linked">Letras vinculadas a esta canción</string>
