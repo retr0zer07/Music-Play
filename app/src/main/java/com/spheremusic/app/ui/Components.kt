@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.Icon
@@ -105,10 +104,13 @@ fun FavoriteButton(favorite: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun SongRow(song: Song, favorite: Boolean, selected: Boolean, onPlay: () -> Unit, onFavorite: () -> Unit, onMore: (() -> Unit)? = null) {
+fun SongRow(
+    song: Song, favorite: Boolean, selected: Boolean, onPlay: () -> Unit,
+    onFavorite: () -> Unit, onMore: (() -> Unit)? = null, playing: Boolean = false,
+) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-            .background(if (selected) SpherePurple.copy(alpha = 0.08f) else Color.Transparent)
+            .background(if (selected) SpherePurple.copy(alpha = 0.16f) else Color.Transparent)
             .clickable(onClick = onPlay).padding(start = 10.dp, top = 8.dp, bottom = 8.dp, end = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -121,7 +123,7 @@ fun SongRow(song: Song, favorite: Boolean, selected: Boolean, onPlay: () -> Unit
             )
             Text(song.artist, color = SphereMuted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        if (selected) Icon(Icons.Rounded.GraphicEq, null, Modifier.size(20.dp), tint = SpherePurple)
+        if (selected) PlaybackEqualizer(playing, song, Modifier.size(22.dp))
         else Text(formatTime(song.durationMs), color = SphereMuted, style = MaterialTheme.typography.labelSmall)
         FavoriteButton(favorite, onFavorite)
         if (onMore != null) IconButton(onMore) {

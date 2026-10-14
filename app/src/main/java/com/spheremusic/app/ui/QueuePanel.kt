@@ -100,7 +100,8 @@ fun QueuePanel(
                     Column(Modifier.weight(1f)) {
                         SongRow(song, song.id in state.favorites, song.id == state.current?.id,
                             { onPlay(index) }, { onFavorite(song) },
-                            onMore = onSongActions?.let { action -> { action(song) } })
+                            onMore = onSongActions?.let { action -> { action(song) } },
+                            playing = state.playing && song.id == state.current?.id)
                     }
                     Icon(
                         Icons.Rounded.DragHandle,

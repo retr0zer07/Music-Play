@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.spheremusic.app.MusicState
 import com.spheremusic.app.data.LyricsParser
 import com.spheremusic.app.data.Song
@@ -23,13 +24,15 @@ class LyricsActionsTest {
                 PlayerScreen(state.value, SnackbarHostState(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
             }
         }
-        compose.onNodeWithText("Letras").performClick()
+        compose.onNodeWithText("Desliza para ver letras").performScrollTo().performClick()
+        compose.waitForIdle()
         compose.onNodeWithText("Original line").assertExists()
         compose.onNodeWithText("Vincular letras (.lrc / .txt)").assertDoesNotExist()
         compose.onNodeWithText("Carpeta de letras automáticas").assertDoesNotExist()
         compose.runOnIdle { state.value = state.value.copy(lyrics = null) }
-        compose.onNodeWithText("Vincular letras (.lrc / .txt)").assertExists()
-        compose.onNodeWithText("Carpeta de letras automáticas").assertExists()
+        compose.onNodeWithText("Vincular letras (.lrc / .txt)").performScrollTo().assertExists()
+        compose.onNodeWithText("Carpeta de letras automáticas").performScrollTo().assertExists()
+        compose.onNodeWithText("Buscar letra").performScrollTo().assertExists()
         compose.runOnIdle { state.value = state.value.copy(lyricsLoading = true) }
         compose.onNodeWithText("Vincular letras (.lrc / .txt)").assertDoesNotExist()
     }

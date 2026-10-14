@@ -71,6 +71,14 @@
     <string name="lyrics">Letras</string>
     <string name="cover">Portada</string>
     <string name="cover_description">Portada de %1$s</string>
+    <string name="record_description">Disco de %1$s</string>
+    <string name="record_spinning">Disco girando</string>
+    <string name="record_paused">Disco en pausa</string>
+    <string name="song_playing">Reproduciendo %1$s</string>
+    <string name="song_paused">En pausa: %1$s</string>
+    <string name="lyrics_scroll_hint">Desliza para ver letras</string>
+    <string name="open_queue">Abrir cola de reproducción</string>
+    <string name="close_queue">Volver al reproductor</string>
     <string name="link_lyrics">Vincular letras (.lrc / .txt)</string>
     <string name="search_lyrics">Buscar letra</string>
     <string name="lyrics_search_error">No se pudo abrir el navegador para buscar la letra.</string>

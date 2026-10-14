@@ -316,6 +316,7 @@ fun SphereApp(
                                 onPlay = { if (state.ready) { onPlay(collection, song, state.shuffle); playerOpen = true } },
                                 onFavorite = { onFavorite(song) },
                                 onMore = { actionsSong = song },
+                                playing = state.playing && song.id == state.current?.id,
                             )
                         }
                     }

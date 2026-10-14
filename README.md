@@ -9,6 +9,16 @@ cuando el archivo no tiene una portada disponible.
 
 - Biblioteca del dispositivo mediante MediaStore: canciones, álbumes y búsqueda.
 - Inicio simplificado con buscador y lista, sin cartel promocional.
+- La canción activa se destaca en las listas con un ecualizador animado mientras
+  reproduce, y un indicador quieto al pausar.
+- Reproductor sin pestañas: portada en disco de vinilo que gira al reproducir
+  y conserva el ángulo al pausar. Desliza hacia arriba para leer las letras debajo
+  de los controles, o toca **Desliza para ver letras**. Las animaciones se detienen
+  al salir de la app y respetan la escala de animación del sistema.
+- **Abrir cola de reproducción**, abajo a la derecha de los controles, abre la
+  cola con reproducción, favoritos, acciones y arrastre. Atrás vuelve al
+  reproductor sin reiniciar la canción. Las letras sincronizadas siguen la
+  posición solamente cuando estás leyendo esa sección, sin saltar desde la portada.
 - Barra de hora/batería oculta (reaparece temporalmente al deslizar desde arriba).
   Reproductor desplazable en pantallas pequeñas, horizontal o con letras grandes.
 - Favoritos guardados localmente.
