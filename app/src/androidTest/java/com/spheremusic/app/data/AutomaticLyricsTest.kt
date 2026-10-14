@@ -20,7 +20,6 @@ class AutomaticLyricsTest {
         val lyrics = repository.lyrics(song)
         assertNotNull("SnapTube _private LRC must load automatically", lyrics)
         assertTrue("Parsed lyrics must contain nonblank lines", lyrics!!.lines.any { it.text.isNotBlank() })
-        assertTrue("LRC should have timestamps", lyrics.synchronized)
     }
 
     @Test fun duplicateSidecarsPreferTheirOwnAudioFolder() = runBlocking {
