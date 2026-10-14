@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
 import android.provider.DocumentsContract
+import android.os.Build
 import com.spheremusic.app.R
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -49,15 +50,19 @@ class MusicRepository(private val context: Context) {
 
     suspend fun songs(): List<Song> = withContext(Dispatchers.IO) {
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-        val columns = arrayOf(
+        val columns = mutableListOf(
             MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.ALBUM_ID, MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.DISPLAY_NAME, MediaStore.Audio.Media.DATE_ADDED,
         )
+        if (Build.VERSION.SDK_INT >= 29) {
+            columns += MediaStore.Audio.Media.RELATIVE_PATH
+            columns += MediaStore.Audio.Media.VOLUME_NAME
+        }
         val result = mutableListOf<Song>()
         val cursor = context.contentResolver.query(
-            collection, columns, null, null,
+            collection, columns.toTypedArray(), null, null,
             "${MediaStore.Audio.Media.DATE_ADDED} DESC, ${MediaStore.Audio.Media._ID} DESC",
         ) ?: throw IOException("MediaStore returned no cursor")
         cursor.use {
@@ -73,6 +78,8 @@ class MusicRepository(private val context: Context) {
                     label(3, R.string.unknown_album), albumId, it.getLong(5).coerceAtLeast(0),
                     ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId),
                     it.getString(6).orEmpty(), it.getLong(7),
+                    if (Build.VERSION.SDK_INT >= 29) it.getString(8).orEmpty() else "",
+                    if (Build.VERSION.SDK_INT >= 29) it.getString(9).orEmpty() else "",
                 )
             }
         }
@@ -87,14 +94,65 @@ class MusicRepository(private val context: Context) {
             val automatic = lyricsLock.withLock {
                 val folder = lyricsFolder()
                 if (folder == null) null else {
-                    val index = lyricsIndex ?: indexLyrics(Uri.parse(folder)).also { lyricsIndex = it }
-                    LyricsMatcher.match(song.fileName, song.title, index)
+                    val tree = Uri.parse(folder)
+                    val siblingDirectory = LyricsLocation.siblingDirectory(
+                        tree.authority.orEmpty(), DocumentsContract.getTreeDocumentId(tree),
+                        song.volumeName, song.relativePath,
+                    )
+                    val sibling = siblingDirectory?.let {
+                        // Query siblings every time so new sidecars are visible without rescanning all folders.
+                        LyricsMatcher.match(song.fileName, song.title, directoryLyrics(tree, it))
+                    }
+                    sibling ?: run {
+                        val index = lyricsIndex ?: indexLyrics(tree).also { lyricsIndex = it }
+                        LyricsMatcher.match(song.fileName, song.title, index) ?: run {
+                            // A cached miss can mean a new download; refresh before declaring no match.
+                            val refreshed = indexLyrics(tree).also { lyricsIndex = it }
+                            LyricsMatcher.match(song.fileName, song.title, refreshed)
+                        }
+                    }
                 }
             }
             if (automatic != null) return@withContext readExternal(automatic)
+                ?: throw IllegalArgumentException("Matched LRC contains no lyrics")
             val stream = context.contentResolver.openInputStream(song.uri)
                 ?: throw IOException("Cannot open audio")
             stream.use { EmbeddedLyrics.read(it)?.let(LyricsParser::parse) }
+        }
+    }
+
+    private suspend fun directoryLyrics(tree: Uri, directoryId: String): Map<String, List<Uri>> {
+        val result = mutableMapOf<String, MutableList<Uri>>()
+        for (document in directoryDocuments(tree, directoryId)) {
+            if (document.mimeType != DocumentsContract.Document.MIME_TYPE_DIR &&
+                document.name.endsWith(".lrc", ignoreCase = true)
+            ) {
+                result.getOrPut(LyricsMatcher.key(document.name)) { mutableListOf() }
+                    .add(DocumentsContract.buildDocumentUriUsingTree(tree, document.id))
+            }
+        }
+        return result
+    }
+
+    private data class Document(val id: String, val name: String, val mimeType: String)
+
+    private suspend fun directoryDocuments(tree: Uri, directoryId: String): List<Document> {
+        coroutineContext.ensureActive()
+        val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, directoryId)
+        val columns = arrayOf(
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+        )
+        val cursor = context.contentResolver.query(children, columns, null, null, null)
+            ?: throw IOException("Cannot list lyrics folder")
+        return cursor.use {
+            buildList {
+                while (it.moveToNext()) {
+                    coroutineContext.ensureActive()
+                    add(Document(it.getString(0), it.getString(1).orEmpty(), it.getString(2).orEmpty()))
+                }
+            }
         }
     }
 
@@ -107,25 +165,12 @@ class MusicRepository(private val context: Context) {
             coroutineContext.ensureActive()
             val parent = documents.removeFirst()
             if (!visited.add(parent)) continue
-            val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, parent)
-            val columns = arrayOf(
-                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-                DocumentsContract.Document.COLUMN_DISPLAY_NAME,
-                DocumentsContract.Document.COLUMN_MIME_TYPE,
-            )
-            val cursor = context.contentResolver.query(children, columns, null, null, null)
-                ?: throw IOException("Cannot list lyrics folder")
-            cursor.use {
-                while (it.moveToNext()) {
-                    coroutineContext.ensureActive()
-                    val id = it.getString(0)
-                    val name = it.getString(1).orEmpty()
-                    if (it.getString(2) == DocumentsContract.Document.MIME_TYPE_DIR) {
-                        documents.add(id)
-                    } else if (name.endsWith(".lrc", ignoreCase = true)) {
-                        index.getOrPut(LyricsMatcher.key(name)) { mutableListOf() }
-                            .add(DocumentsContract.buildDocumentUriUsingTree(tree, id))
-                    }
+            for (document in directoryDocuments(tree, parent)) {
+                if (document.mimeType == DocumentsContract.Document.MIME_TYPE_DIR) {
+                    documents.add(document.id)
+                } else if (document.name.endsWith(".lrc", ignoreCase = true)) {
+                    index.getOrPut(LyricsMatcher.key(document.name)) { mutableListOf() }
+                        .add(DocumentsContract.buildDocumentUriUsingTree(tree, document.id))
                 }
             }
         }

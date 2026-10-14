@@ -72,13 +72,23 @@ disponibles, aparece una portada generada por la app. Para letras externas:
 
 Toca la carpeta en la cabecera o **Carpeta de letras automáticas** en Letras.
 Autoriza una carpeta una sola vez: se buscan archivos `.lrc` en ella y sus
-subcarpetas, con permiso recordado. Se compara primero el nombre del archivo
-de audio sin extensión y luego su título, sin distinguir mayúsculas. Ejemplo:
+subcarpetas, con permiso recordado. En Android 10+ se consulta primero **la misma
+carpeta del archivo de audio**, si está dentro de la carpeta autorizada, usando
+su ubicación y volumen de MediaStore. Autoriza la carpeta de tu música o una
+carpeta superior; el permiso de audio por sí solo no permite leer los `.lrc`.
+En otros proveedores/Android 8–9 se mantiene la búsqueda por nombre dentro del
+árbol autorizado.
+
+Se compara primero el nombre del archivo de audio sin extensión y luego su
+título, sin distinguir mayúsculas. También se admite la variante de SnapTube
+`nombre_private.lrc`, con preferencia por `nombre.lrc`. Ejemplo:
 `Mi tema.mp3` → `Mi tema.lrc`. Se conserva la puntuación y se normaliza Unicode.
 Si dos archivos tienen el mismo nombre, vincula uno manualmente para evitar
 mostrar una letra incorrecta. Los vínculos manuales tienen prioridad; después
 van los LRC automáticos y, si no hay coincidencia, las letras incrustadas.
-Toca actualizar si añades letras a la carpeta. Si revocas el permiso o borras
+La carpeta vecina se consulta al cargar la canción y las búsquedas sin resultado
+refrescan el índice para detectar nuevas descargas. Toca actualizar para volver
+a cargar letras de una canción que ya esté abierta. Si revocas el permiso o borras
 archivos vinculados, la app avisa; vuelve a seleccionar la carpeta/archivo.
 
 El selector admite proveedores locales y de documentos. El límite es **1 MB**;

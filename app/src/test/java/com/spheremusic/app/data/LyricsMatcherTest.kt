@@ -5,6 +5,14 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class LyricsMatcherTest {
+    @Test fun matchesSnapTubePrivateSidecarButExactNameWins() {
+        val audio = "Tame Impala - Dracula (Official Video)(M4A_128K).m4a"
+        val privateKey = LyricsMatcher.key("Tame Impala - Dracula (Official Video)(M4A_128K)_private.lrc")
+        assertEquals("private", LyricsMatcher.match(audio, "Dracula", mapOf(privateKey to listOf("private"))))
+        assertEquals("exact", LyricsMatcher.match(audio, "Dracula",
+            mapOf(privateKey to listOf("private"), LyricsMatcher.key(audio) to listOf("exact"))))
+    }
+
     @Test fun `matches audio filename case insensitively and normalizes Unicode`() {
         val index = mapOf(LyricsMatcher.key("Canción.LRC") to listOf("uri"))
         assertEquals("uri", LyricsMatcher.match("CANCIO\u0301N.mp3", "Other", index))

@@ -216,10 +216,13 @@ private fun LyricsPanel(
         if (state.lyricsLoading) {
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         } else if (lyrics == null) {
-            EmptyState(
-                R.string.no_lyrics, R.string.no_lyrics_body,
-                Modifier.weight(1f).verticalScroll(rememberScrollState()),
-            )
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                EmptyState(R.string.no_lyrics, R.string.no_lyrics_body)
+                Text(
+                    stringResource(R.string.lyrics_auto_help), Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    color = SphereMuted, style = MaterialTheme.typography.bodySmall,
+                )
+            }
         } else {
             LazyColumn(
                 Modifier.weight(1f).fillMaxWidth(), state = listState,

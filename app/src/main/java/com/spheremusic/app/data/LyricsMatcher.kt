@@ -11,9 +11,11 @@ object LyricsMatcher {
 
     fun <T> match(fileName: String, title: String, index: Map<String, List<T>>): T? {
         for (name in listOf(fileName, title).filter { it.isNotBlank() }.distinctBy(::key)) {
-            val matches = index[key(name)].orEmpty()
-            if (matches.size > 1) throw AmbiguousLyricsException(name)
-            matches.singleOrNull()?.let { return it }
+            for (candidate in listOf(key(name), "${key(name)}_private")) {
+                val matches = index[candidate].orEmpty()
+                if (matches.size > 1) throw AmbiguousLyricsException(name)
+                matches.singleOrNull()?.let { return it }
+            }
         }
 
         return null
