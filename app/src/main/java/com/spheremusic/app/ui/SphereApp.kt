@@ -362,7 +362,7 @@ fun SphereApp(
             onQueueMove, onLyricsFolder, onSongActions = { actionsSong = it }, onSearchLyrics = onSearchLyrics,
         )
     }
-    if (nameDialog) PlaylistNameDialog(renameTarget, { nameDialog = false }) { name ->
+    if (nameDialog) PlaylistNameDialog(renameTarget, { nameDialog = false; batchCreate = false }) { name ->
         val target = renameTarget
         if (batchCreate) { onCreateManyPlaylist(name, selectedSongs.map { it.id }); selectedIds = longArrayOf() }
         else if (target == null) onCreatePlaylist(name, createWithSong) else onRenamePlaylist(target.id, name)
