@@ -231,23 +231,24 @@ class MainActivity : ComponentActivity() {
             clipboardHandler.postDelayed(importClipboard, 200)
         }
 
-        internal fun audioShareIntent(songs: List<Song>): Intent {
-            require(songs.isNotEmpty()) { "Select audio to share" }
-            val uris = songs.distinctBy { it.id }.map { it.uri }
-            return Intent(if (uris.size == 1) Intent.ACTION_SEND else Intent.ACTION_SEND_MULTIPLE).apply {
-                type = "audio/*"
-                if (uris.size == 1) putExtra(Intent.EXTRA_STREAM, uris.first())
-                else putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
-                clipData = ClipData.newRawUri(songs.first().title, uris.first()).apply {
-                    uris.drop(1).forEach { addItem(ClipData.Item(it)) }
-                }
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-        }
     }
 
     override fun onDestroy() {
         clipboardHandler.removeCallbacks(importClipboard)
         super.onDestroy()
+    }
+}
+
+internal fun audioShareIntent(songs: List<Song>): Intent {
+    require(songs.isNotEmpty()) { "Select audio to share" }
+    val uris = songs.distinctBy { it.id }.map { it.uri }
+    return Intent(if (uris.size == 1) Intent.ACTION_SEND else Intent.ACTION_SEND_MULTIPLE).apply {
+        type = "audio/*"
+        if (uris.size == 1) putExtra(Intent.EXTRA_STREAM, uris.first())
+        else putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+        clipData = ClipData.newRawUri(songs.first().title, uris.first()).apply {
+            uris.drop(1).forEach { addItem(ClipData.Item(it)) }
+        }
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 }
