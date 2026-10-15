@@ -53,9 +53,15 @@ class MusicRepositoryTest {
             val songs = MusicRepository(context).songs()
             assertTrue("Audio with IS_MUSIC=0 must be included", songs.any { it.uri == uri })
             val indexedCount = checkNotNull(resolver.query(
-                collection, arrayOf(MediaStore.Audio.Media._ID), null, null, null,
-            )).use { it.count }
-            assertEquals("Every accessible indexed audio row must be returned", indexedCount, songs.size)
+                collection, arrayOf(
+                    if (Build.VERSION.SDK_INT >= 29) MediaStore.Audio.Media.RELATIVE_PATH else MediaStore.Audio.Media.DATA,
+                ), null, null, null,
+            )).use { cursor ->
+                var count = 0
+                while (cursor.moveToNext()) if (!AudioFilter.isWhatsApp(cursor.getString(0).orEmpty())) count++
+                count
+            }
+            assertEquals("Every non-WhatsApp indexed audio row must be returned", indexedCount, songs.size)
             assertTrue("MediaStore query must return recent additions first", songs.zipWithNext().all { (a, b) ->
                 a.dateAddedSeconds > b.dateAddedSeconds ||
                     (a.dateAddedSeconds == b.dateAddedSeconds && a.id >= b.id)

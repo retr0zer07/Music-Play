@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Sphere Music</string>
+    <string name="play_next">Reproducir a continuación</string>
+    <string name="play_next_added">A continuación · Mezcla desactivada</string>
+    <string name="share_song">Compartir canción</string>
+    <string name="share_error">No se pudo compartir el audio.</string>
+    <string name="select_songs">Seleccionar canciones</string>
+    <string name="select_all">Seleccionar todas</string>
+    <string name="delete_many_confirm">¿Borrar %1$d canciones del teléfono?</string>
+    <string name="equalizer">Ecualizador</string>
+    <string name="equalizer_error">Ecualizador no disponible en esta sesión.</string>
+    <string name="equalizer_start_playback">Reproduce una canción para ajustar el sonido.</string>
     <string name="tagline">Tu música. Tu universo.</string>
     <string name="library">Biblioteca</string>
     <string name="albums">Álbumes</string>

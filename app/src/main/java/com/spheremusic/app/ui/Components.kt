@@ -3,6 +3,8 @@ package com.spheremusic.app.ui
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Checkbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -104,17 +107,21 @@ fun FavoriteButton(favorite: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 fun SongRow(
     song: Song, favorite: Boolean, selected: Boolean, onPlay: () -> Unit,
     onFavorite: () -> Unit, onMore: (() -> Unit)? = null, playing: Boolean = false,
+    batchSelected: Boolean? = null, onLongPress: (() -> Unit)? = null,
 ) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
             .background(if (selected) SpherePurple.copy(alpha = 0.16f) else Color.Transparent)
-            .clickable(onClick = onPlay).padding(start = 10.dp, top = 8.dp, bottom = 8.dp, end = 2.dp),
+            .combinedClickable(onClick = onPlay, onLongClick = onLongPress)
+            .padding(start = 10.dp, top = 8.dp, bottom = 8.dp, end = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Artwork(song, Modifier.size(54.dp))
+        if (batchSelected != null) Checkbox(batchSelected, { onPlay() })
+        else Artwork(song, Modifier.size(54.dp))
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(

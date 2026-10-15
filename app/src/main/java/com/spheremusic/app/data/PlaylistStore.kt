@@ -34,10 +34,14 @@ class PlaylistStore(private val preferences: SharedPreferences) {
     }
 
     @Synchronized fun addSong(id: String, songId: Long): List<Playlist> {
+        return addSongs(id, listOf(songId))
+    }
+
+    @Synchronized fun addSongs(id: String, songIds: List<Long>): List<Playlist> {
         val playlists = load()
         require(playlists.any { it.id == id })
         return save(playlists.map {
-            if (it.id == id) it.copy(songIds = (it.songIds + songId).distinct()) else it
+            if (it.id == id) it.copy(songIds = (it.songIds + songIds).distinct()) else it
         })
     }
 

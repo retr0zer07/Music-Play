@@ -35,6 +35,7 @@ import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -100,6 +101,7 @@ fun PlayerScreen(
 ) {
     val song = state.current ?: return
     var queueOpen by rememberSaveable { mutableStateOf(false) }
+    var equalizerOpen by rememberSaveable { mutableStateOf(false) }
     var dragPosition by remember(song.id) { mutableStateOf<Float?>(null) }
     val list = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -132,13 +134,13 @@ fun PlayerScreen(
             }
         }
         Scaffold(
-            containerColor = SphereBackground,
+            containerColor = LocalArtworkBackground.current,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             snackbarHost = { SnackbarHost(snackbar) },
         ) { padding ->
             Column(
                 Modifier.fillMaxSize()
-                    .background(Brush.verticalGradient(listOf(Color(0xFF292038), SphereBackground, SphereBackground)))
+                    .background(Brush.verticalGradient(listOf(LocalArtworkBackground.current, LocalArtworkBackground.current, SphereBackground)))
                     .padding(padding).padding(WindowInsets.safeDrawing.asPaddingValues()).padding(horizontal = 24.dp),
             ) {
                 Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -189,13 +191,14 @@ fun PlayerScreen(
                                 Text(song.artist, Modifier.padding(top = 7.dp, bottom = 14.dp), color = SphereMuted,
                                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 val seekDescription = stringResource(R.string.seek)
-                                Slider(
+                                PlaybackSeekBar(
                                     value = dragPosition ?: state.positionMs.toFloat().coerceIn(0f, state.durationMs.toFloat().coerceAtLeast(1f)),
                                     onValueChange = { dragPosition = it },
                                     onValueChangeFinished = { dragPosition?.let { onSeek(it.toLong()) }; dragPosition = null },
                                     valueRange = 0f..state.durationMs.toFloat().coerceAtLeast(1f),
                                     enabled = state.durationMs > 0,
                                     modifier = Modifier.fillMaxWidth().semantics { contentDescription = seekDescription },
+                                    playing = state.playing,
                                 )
                                 Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(formatTime(dragPosition?.toLong() ?: state.positionMs), color = SphereMuted,
@@ -237,6 +240,9 @@ fun PlayerScreen(
                                     }
                                 }
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton({ equalizerOpen = true }) {
+                                        Icon(Icons.Rounded.Equalizer, stringResource(R.string.equalizer), tint = SpherePurple)
+                                    }
                                     TextButton({ scope.launch { list.animateScrollToItem(1) } }, Modifier.weight(1f)) {
                                         Icon(Icons.Rounded.ExpandMore, null)
                                         Text(stringResource(R.string.lyrics_scroll_hint), style = MaterialTheme.typography.labelMedium)
@@ -297,5 +303,6 @@ fun PlayerScreen(
                 }
             }
         }
+        if (equalizerOpen) EqualizerDialog { equalizerOpen = false }
     }
 }

@@ -106,6 +106,8 @@ class MusicRepository(private val context: Context) {
         if (Build.VERSION.SDK_INT >= 29) {
             columns += MediaStore.Audio.Media.RELATIVE_PATH
             columns += MediaStore.Audio.Media.VOLUME_NAME
+        } else {
+            columns += MediaStore.Audio.Media.DATA
         }
         val result = mutableListOf<Song>()
         val cursor = context.contentResolver.query(
@@ -114,6 +116,7 @@ class MusicRepository(private val context: Context) {
         ) ?: throw IOException("MediaStore returned no cursor")
         cursor.use {
             while (it.moveToNext()) {
+                if (AudioFilter.isWhatsApp(it.getString(8).orEmpty())) continue
                 val id = it.getLong(0)
                 val albumId = it.getLong(4)
                 fun label(index: Int, fallback: Int): String =

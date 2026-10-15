@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.IntentSender
 import android.content.ActivityNotFoundException
 import android.content.ClipboardManager
+import android.content.ClipData
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -21,6 +22,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.viewModels
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +37,8 @@ import com.spheremusic.app.ui.SphereApp
 import com.spheremusic.app.ui.SphereTheme
 import com.spheremusic.app.ui.hideStatusBar
 import com.spheremusic.app.data.CopiedLyrics
+import com.spheremusic.app.ui.LocalArtworkBackground
+import com.spheremusic.app.ui.rememberArtworkBackground
 
 class MainActivity : ComponentActivity() {
     private val model: MusicViewModel by viewModels()
@@ -71,13 +75,15 @@ class MainActivity : ComponentActivity() {
             Manifest.permission.READ_EXTERNAL_STORAGE
         }
         setContent {
+            val state by model.state.collectAsStateWithLifecycle()
+            val artworkBackground = rememberArtworkBackground(state.current)
+            CompositionLocalProvider(LocalArtworkBackground provides artworkBackground) {
             SphereTheme {
-                val state by model.state.collectAsStateWithLifecycle()
                 var permission by remember { mutableStateOf(hasPermission(audioPermission)) }
                 var denied by rememberSaveable { mutableStateOf(false) }
                 var pendingLyricsSongId by rememberSaveable { mutableStateOf<Long?>(null) }
                 var selectedLyricsUri by rememberSaveable { mutableStateOf<String?>(null) }
-                var legacyDeleteId by rememberSaveable { mutableStateOf<Long?>(null) }
+                var legacyDeleteIds by rememberSaveable { mutableStateOf(longArrayOf()) }
                 val requestPermission = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestPermission(),
                 ) { granted -> permission = granted; denied = !granted }
@@ -93,9 +99,9 @@ class MainActivity : ComponentActivity() {
                 val writePermission = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestPermission(),
                 ) { granted ->
-                    val song = state.songs.find { it.id == legacyDeleteId }
-                    legacyDeleteId = null
-                    if (granted && song != null) model.requestDeletion(song)
+                    val songs = state.songs.filter { it.id in legacyDeleteIds }
+                    legacyDeleteIds = longArrayOf()
+                    if (granted && songs.isNotEmpty()) model.requestDeletions(songs)
                     else if (!granted) model.deletionError(SecurityException("Storage write permission denied"))
                 }
                 LaunchedEffect(model) {
@@ -174,10 +180,34 @@ class MainActivity : ComponentActivity() {
                     onRenamePlaylist = model::renamePlaylist,
                     onDeletePlaylist = model::deletePlaylist,
                     onAddToPlaylist = model::addToPlaylist,
+                    onAddManyToPlaylist = model::addManyToPlaylist,
+                    onCreateManyPlaylist = model::createManyPlaylist,
+                    onPlayNext = model::playNext,
+                    onShare = { song ->
+                        try {
+                            val share = Intent(Intent.ACTION_SEND).apply {
+                                type = contentResolver.getType(song.uri) ?: "audio/*"
+                                putExtra(Intent.EXTRA_STREAM, song.uri)
+                                clipData = ClipData.newUri(contentResolver, song.title, song.uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            startActivity(Intent.createChooser(share, getString(com.spheremusic.app.R.string.share_song)))
+                        } catch (error: ActivityNotFoundException) {
+                            model.shareError(error)
+                        } catch (error: SecurityException) {
+                            model.shareError(error)
+                        }
+                    },
+                    onDeleteSongs = { songs ->
+                        if (Build.VERSION.SDK_INT <= 28 && !hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                            legacyDeleteIds = songs.map { it.id }.toLongArray()
+                            writePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        } else model.requestDeletions(songs)
+                    },
                     onRemoveFromPlaylist = model::removeFromPlaylist,
                     onDeleteSong = { song ->
                         if (Build.VERSION.SDK_INT <= 28 && !hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                            legacyDeleteId = song.id
+                            legacyDeleteIds = longArrayOf(song.id)
                             writePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         } else model.requestDeletion(song)
                     },
@@ -186,6 +216,7 @@ class MainActivity : ComponentActivity() {
                         selectLyrics.launch(arrayOf("*/*"))
                     },
                 )
+            }
             }
         }
     }

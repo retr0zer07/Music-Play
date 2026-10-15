@@ -115,8 +115,10 @@ class MusicViewModel(application: Application, private val savedState: SavedStat
         }, ContextCompat.getMainExecutor(application))
         viewModelScope.launch {
             while (true) {
-                syncPlayer()
-                delay(400)
+                controller?.let { player ->
+                    mutableState.update { it.copy(positionMs = player.currentPosition.coerceAtLeast(0)) }
+                }
+                delay(50)
             }
         }
     }
@@ -128,6 +130,12 @@ class MusicViewModel(application: Application, private val savedState: SavedStat
             try {
                 repository.invalidateLyricsIndex()
                 val songs = repository.songs()
+                val ids = songs.map { it.id.toString() }.toSet()
+                controller?.let { player ->
+                    for (index in player.mediaItemCount - 1 downTo 0) {
+                        if (player.getMediaItemAt(index).mediaId !in ids) player.removeMediaItem(index)
+                    }
+                }
                 mutableState.update { it.copy(songs = songs) }
                 lyricsSongId = null
                 syncPlayer()
@@ -229,9 +237,14 @@ class MusicViewModel(application: Application, private val savedState: SavedStat
     }
 
     fun createPlaylist(name: String, songId: Long?) = updatePlaylists { create(name, songId) }
+    fun createManyPlaylist(name: String, ids: List<Long>) = updatePlaylists {
+        val id = create(name).last().id
+        addSongs(id, ids)
+    }
     fun renamePlaylist(id: String, name: String) = updatePlaylists { rename(id, name) }
     fun deletePlaylist(id: String) = updatePlaylists { delete(id) }
     fun addToPlaylist(id: String, songId: Long) = updatePlaylists { addSong(id, songId) }
+    fun addManyToPlaylist(id: String, songIds: List<Long>) = updatePlaylists { addSongs(id, songIds) }
     fun removeFromPlaylist(id: String, songId: Long) = updatePlaylists { removeSong(id, songId) }
 
     private fun updatePlaylists(operation: PlaylistStore.() -> List<Playlist>) {
@@ -252,32 +265,29 @@ class MusicViewModel(application: Application, private val savedState: SavedStat
     }
 
     fun deletionError(error: Exception) = report(R.string.delete_error, error)
+    fun shareError(error: Exception) = report(R.string.share_error, error)
 
     fun requestDeletion(song: Song) {
+        requestDeletions(listOf(song))
+    }
+
+    fun requestDeletions(songs: List<Song>) {
+        if (songs.isEmpty()) return
         if (savedState.get<Long>("deleting_id") != null) {
             deletionError(IllegalStateException("A deletion is already pending"))
             return
         }
         viewModelScope.launch {
-            val uri = if (Build.VERSION.SDK_INT >= 29 && song.volumeName.isNotBlank()) {
-                ContentUris.withAppendedId(MediaStore.Audio.Media.getContentUri(song.volumeName), song.id)
-            } else song.uri
-            savedState["deleting_id"] = song.id
-            savedState["deleting_uri"] = uri.toString()
+            val unique = songs.distinctBy { it.id }
+            savedState["deleting_ids"] = unique.map { it.id }.toLongArray()
+            savedState["deleting_uris"] = unique.map { song ->
+                if (Build.VERSION.SDK_INT >= 29 && song.volumeName.isNotBlank()) {
+                    ContentUris.withAppendedId(MediaStore.Audio.Media.getContentUri(song.volumeName), song.id).toString()
+                } else song.uri.toString()
+            }.toTypedArray()
+            savedState["deleting_id"] = unique.first().id
             try {
-                if (Build.VERSION.SDK_INT >= 30) {
-                    val sender = MediaStore.createDeleteRequest(getApplication<Application>().contentResolver, listOf(uri))
-                    deletionRequests.send(sender.intentSender)
-                } else {
-                    try {
-                        repository.deleteAudio(uri)
-                        finishDeletion(song.id)
-                    } catch (error: SecurityException) {
-                        if (Build.VERSION.SDK_INT >= 29 && error is RecoverableSecurityException) {
-                            deletionRequests.send(error.userAction.actionIntent.intentSender)
-                        } else throw error
-                    }
-                }
+                continueDeletions()
             } catch (error: SecurityException) {
                 deletionError(error)
                 clearDeletion()
@@ -293,20 +303,62 @@ class MusicViewModel(application: Application, private val savedState: SavedStat
 
     fun completeDeletion(approved: Boolean) {
         if (!approved) { clearDeletion(); return }
-        val id = savedState.get<Long>("deleting_id") ?: return
-        val uri = savedState.get<String>("deleting_uri")?.let(Uri::parse) ?: return
         viewModelScope.launch {
             try {
-                if (Build.VERSION.SDK_INT < 30) repository.deleteAudio(uri)
-                if (repository.audioExists(uri)) throw IOException("Android did not delete the audio")
-                finishDeletion(id)
+                val ids = savedState.get<LongArray>("deleting_ids") ?: return@launch
+                val uris = savedState.get<Array<String>>("deleting_uris") ?: return@launch
+                val count = if (Build.VERSION.SDK_INT >= 30) minOf(ids.size, 200) else 1
+                for (index in 0 until count) {
+                    val uri = Uri.parse(uris[index])
+                    if (Build.VERSION.SDK_INT < 30) repository.deleteAudio(uri)
+                    if (repository.audioExists(uri)) throw IOException("Android did not delete the audio")
+                    finishDeletion(ids[index])
+                }
+                savedState["deleting_ids"] = ids.drop(count).toLongArray()
+                savedState["deleting_uris"] = uris.drop(count).toTypedArray()
+                continueDeletions()
             } catch (error: SecurityException) {
                 deletionError(error)
+                clearDeletion()
             } catch (error: IOException) {
                 deletionError(error)
-            } finally {
+                clearDeletion()
+            } catch (error: IllegalArgumentException) {
+                deletionError(error)
                 clearDeletion()
             }
+
+        }
+    }
+
+    private suspend fun continueDeletions() {
+        val ids = savedState.get<LongArray>("deleting_ids") ?: return
+        val uris = savedState.get<Array<String>>("deleting_uris") ?: return
+        if (ids.isEmpty()) {
+            clearDeletion()
+            messages.send(R.string.song_deleted)
+            return
+        }
+        if (Build.VERSION.SDK_INT >= 30) {
+            deletionRequests.send(MediaStore.createDeleteRequest(
+                getApplication<Application>().contentResolver, uris.take(200).map(Uri::parse),
+            ).intentSender)
+        } else {
+            for (index in ids.indices) {
+                savedState["deleting_ids"] = ids.drop(index).toLongArray()
+                savedState["deleting_uris"] = uris.drop(index).toTypedArray()
+                try {
+                    repository.deleteAudio(Uri.parse(uris[index]))
+                    finishDeletion(ids[index])
+                } catch (error: SecurityException) {
+                    if (Build.VERSION.SDK_INT >= 29 && error is RecoverableSecurityException) {
+                        deletionRequests.send(error.userAction.actionIntent.intentSender)
+                        return
+                    } else throw error
+                }
+            }
+            clearDeletion()
+            messages.send(R.string.song_deleted)
         }
     }
 
@@ -329,13 +381,32 @@ class MusicViewModel(application: Application, private val savedState: SavedStat
         } catch (error: org.json.JSONException) {
             report(R.string.playlist_error, error)
         }
-        clearDeletion()
-        messages.send(R.string.song_deleted)
     }
 
     private fun clearDeletion() {
         savedState.remove<Long>("deleting_id")
         savedState.remove<String>("deleting_uri")
+        savedState.remove<LongArray>("deleting_ids")
+        savedState.remove<Array<String>>("deleting_uris")
+    }
+
+    fun playNext(song: Song) {
+        val player = controller ?: return
+        if (player.currentMediaItem?.mediaId == song.id.toString()) return
+        if (player.mediaItemCount == 0) {
+            play(listOf(song), song)
+            return
+        }
+        // An explicit next request overrides shuffled/repeat-one order, without restarting the current track.
+        player.shuffleModeEnabled = false
+        if (player.repeatMode == Player.REPEAT_MODE_ONE) player.repeatMode = Player.REPEAT_MODE_OFF
+        val existing = (0 until player.mediaItemCount).firstOrNull {
+            player.getMediaItemAt(it).mediaId == song.id.toString()
+        }
+        if (existing != null) player.removeMediaItem(existing)
+        player.addMediaItem(player.currentMediaItemIndex + 1, song.toMediaItem())
+        syncPlayer()
+        viewModelScope.launch { messages.send(R.string.play_next_added) }
     }
 
     fun linkLyrics(song: Song, uri: Uri) {

@@ -55,12 +55,18 @@ fun SongActionsDialog(
     song: Song, inPlaylist: Boolean, onDismiss: () -> Unit, onAdd: () -> Unit,
     onRemove: () -> Unit, onDelete: () -> Unit, onLinkLyrics: () -> Unit,
     onSearchLyrics: () -> Unit,
+    onPlayNext: () -> Unit = {},
+    onShare: () -> Unit = {},
+    onSelect: () -> Unit = {},
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(song.title) },
         text = {
             Column {
+                TextButton(onPlayNext) { Text(stringResource(R.string.play_next)) }
+                TextButton(onShare) { Text(stringResource(R.string.share_song)) }
+                TextButton(onSelect) { Text(stringResource(R.string.select_songs)) }
                 TextButton(onAdd) { Text(stringResource(R.string.playlist_add)) }
                 if (inPlaylist) TextButton(onRemove) { Text(stringResource(R.string.playlist_remove_song)) }
                 TextButton(onLinkLyrics) { Text(stringResource(R.string.link_lyrics)) }

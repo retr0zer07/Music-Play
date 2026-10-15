@@ -46,7 +46,11 @@ fun QueuePanel(
     onFavorite: (Song) -> Unit,
     onSongActions: ((Song) -> Unit)? = null,
 ) {
-    val list = rememberLazyListState()
+    val currentIndex = state.queue.indexOfFirst { it.id == state.current?.id }.coerceAtLeast(0)
+    val list = rememberLazyListState(initialFirstVisibleItemIndex = currentIndex)
+    LaunchedEffect(state.current?.id) {
+        list.scrollToItem(state.queue.indexOfFirst { it.id == state.current?.id }.coerceAtLeast(0))
+    }
     val queue by rememberUpdatedState(state.queue)
     val move by rememberUpdatedState(onMove)
     var dragging by remember { mutableStateOf<Long?>(null) }

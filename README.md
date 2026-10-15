@@ -7,6 +7,20 @@ cuando el archivo no tiene una portada disponible.
 
 ## Qué incluye esta versión
 
+- WhatsApp y WhatsApp Business excluidos por carpeta (no se borran archivos).
+- Selección múltiple: mantén pulsada una canción o usa **Seleccionar canciones**;
+  agrega a playlist o borra con confirmación. **Seleccionar todas** usa el filtro visible.
+- Fondo oscuro adaptado al color dominante de la portada, con transición.
+- Barra de reproducción ondulada, avance suavizado y arrastre accesible.
+- Ecualizador a la izquierda de **Desliza para ver letras**: bandas del dispositivo,
+  presets Normal/Rock/Pop/Clásica/Graves/Voz y ajustes recordados. Disponible cuando
+  Android proporciona un efecto para la sesión; informa si no puede aplicarlo.
+- La cola se abre en la canción actual. **Reproducir a continuación** mueve o inserta
+  un audio después del actual sin reiniciarlo; desactiva mezcla/repetir una para
+  respetar la elección.
+- **Compartir canción** abre el selector de Android con el archivo de audio y
+  un permiso temporal de lectura, no con su ruta privada.
+
 - Biblioteca del dispositivo mediante MediaStore: canciones, álbumes y búsqueda.
 - Inicio simplificado con buscador y lista, sin cartel promocional.
 - La canción activa se destaca en las listas con un ecualizador animado mientras
@@ -64,8 +78,8 @@ GitHub Pages no es necesario para una aplicación nativa.
 
 ### Archivos que aparecen en la biblioteca
 
-La biblioteca incluye **todo el audio indexado por Android en almacenamiento
-compartido**, aunque Android no lo marque como música; también puede incluir
+La biblioteca incluye el audio indexado por Android en almacenamiento
+compartido, **excepto las carpetas de WhatsApp/WhatsApp Business**, aunque Android no lo marque como música; también puede incluir
 grabaciones, tonos y podcasts. No se aplica un límite de duración ni de cantidad.
 El botón actualizar vuelve a consultar el índice de audio, incluyendo los
 volúmenes externos que Android expone en MediaStore.
