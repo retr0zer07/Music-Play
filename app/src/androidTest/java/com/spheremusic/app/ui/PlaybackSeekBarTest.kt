@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -23,9 +24,9 @@ class PlaybackSeekBarTest {
         val enabled = mutableStateOf(true)
         var committed = -1f
         var commits = 0
-        var density = 1f
+        var minimumHeight = 0
         compose.setContent {
-            density = LocalDensity.current.density
+            minimumHeight = with(LocalDensity.current) { 48.dp.roundToPx() }
             SphereTheme {
                 PlaybackSeekBar(
                     progress.value, { progress.value = it }, { committed = progress.value; commits++ },
@@ -35,7 +36,8 @@ class PlaybackSeekBarTest {
             }
         }
         val bar = compose.onNodeWithContentDescription("Test seek")
-        assertTrue(bar.fetchSemanticsNode().boundsInRoot.height / density >= 48f)
+        val height = bar.fetchSemanticsNode().boundsInRoot.height
+        assertTrue("Seek target is $height px; at least $minimumHeight px required", height >= minimumHeight)
         bar.performTouchInput {
             down(centerLeft.copy(x = width * 0.2f))
             moveTo(center.copy(x = width * 0.6f))

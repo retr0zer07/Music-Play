@@ -39,7 +39,7 @@ class PlayerLayoutTest {
             SphereTheme {
                 CompositionLocalProvider(LocalArtworkBackground provides background) {
                 PlayerScreen(
-                    MusicState(current = song, queue = listOf(song), durationMs = 120_000),
+                    MusicState(current = song, queue = listOf(song), positionMs = 45_000, durationMs = 120_000),
                     SnackbarHostState(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
                 )
                 }
