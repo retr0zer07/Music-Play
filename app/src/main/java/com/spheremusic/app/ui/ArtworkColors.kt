@@ -7,7 +7,10 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -37,10 +40,11 @@ internal fun dominantColor(bitmap: Bitmap): Int? {
 @Composable
 fun rememberArtworkBackground(song: Song?): Color {
     val context = LocalContext.current
-    val color by produceState(SphereBackground, song?.artworkUri) {
-        value = SphereBackground
-        val uri = song?.artworkUri ?: return@produceState
-        value = withContext(Dispatchers.IO) {
+    var color by remember { mutableStateOf(SphereBackground) }
+    LaunchedEffect(song?.artworkUri) {
+        color = SphereBackground
+        val uri = song?.artworkUri ?: return@LaunchedEffect
+        color = withContext(Dispatchers.IO) {
             when (val result = context.imageLoader.execute(
                 ImageRequest.Builder(context).data(uri).size(64).allowHardware(false).build(),
             )) {
