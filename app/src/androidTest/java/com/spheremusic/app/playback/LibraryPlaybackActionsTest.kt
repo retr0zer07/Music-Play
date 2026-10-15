@@ -87,6 +87,15 @@ class LibraryPlaybackActionsTest {
             }
             compose.runOnIdle { model.next() }
             compose.waitUntil(5_000) { model.state.value.current?.id == ids[2] }
+            compose.runOnIdle { model.seek(7_000) }
+            compose.waitUntil(5_000) { model.state.value.positionMs >= 7_000 }
+            compose.runOnIdle { model.playNextSongs(listOf(songs[1], songs[0], songs[2], songs[1])) }
+            compose.waitUntil(5_000) { model.state.value.queue.map { it.id } == listOf(ids[2], ids[1], ids[0]) }
+            compose.runOnIdle {
+                assertEquals(ids[2], model.state.value.current?.id)
+                assertTrue(model.state.value.positionMs in 7_000..7_500)
+                assertFalse(model.state.value.playing)
+            }
         } finally {
             // Stop only this app; all MediaStore rows below were created by this test.
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {

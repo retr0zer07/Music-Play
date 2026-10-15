@@ -44,6 +44,7 @@ jobs:
             adb logcat -c
             adb shell am instrument -w com.spheremusic.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results.txt
             adb logcat -d > device-logcat.txt
+            if adb shell test -d /sdcard/Android/data/com.spheremusic.app/files/visual-checks; then adb pull /sdcard/Android/data/com.spheremusic.app/files/visual-checks visual-checks; fi
             grep -E '^OK \([0-9]+ tests?\)' device-results.txt
             if grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' device-results.txt; then exit 1; fi
       - uses: actions/upload-artifact@v4
@@ -53,3 +54,4 @@ jobs:
           path: |
             device-results.txt
             device-logcat.txt
+            visual-checks/

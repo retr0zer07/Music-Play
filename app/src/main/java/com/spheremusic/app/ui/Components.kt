@@ -40,6 +40,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,7 +70,9 @@ fun Artwork(song: Song?, modifier: Modifier = Modifier) {
     )
     val palette = palettes[Math.floorMod(song?.albumId ?: 0L, palettes.size.toLong()).toInt()]
     var failed by remember(song?.artworkUri) { mutableStateOf(false) }
-    Box(modifier.clip(RoundedCornerShape(20.dp)).background(Brush.linearGradient(palette)), contentAlignment = Alignment.Center) {
+    val description = stringResource(R.string.cover_description, song?.album.orEmpty())
+    Box(modifier.semantics { contentDescription = description }.clip(RoundedCornerShape(20.dp))
+        .background(Brush.linearGradient(palette)), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             val radius = size.minDimension
             for (ring in 1..4) {
@@ -86,7 +91,7 @@ fun Artwork(song: Song?, modifier: Modifier = Modifier) {
         if (song?.artworkUri != null && !failed) {
             AsyncImage(
                 model = song.artworkUri,
-                contentDescription = stringResource(R.string.cover_description, song.album),
+                contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 onError = { failed = true },
@@ -115,13 +120,20 @@ fun SongRow(
 ) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-            .background(if (selected) SpherePurple.copy(alpha = 0.16f) else Color.Transparent)
+            .background(if (batchSelected == true || selected) SpherePurple.copy(alpha = 0.16f) else Color.Transparent)
             .combinedClickable(onClick = onPlay, onLongClick = onLongPress)
+            .semantics { if (batchSelected != null) this.selected = batchSelected }
             .padding(start = 10.dp, top = 8.dp, bottom = 8.dp, end = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (batchSelected != null) Checkbox(batchSelected, { onPlay() })
-        else Artwork(song, Modifier.size(54.dp))
+        Box(Modifier.size(54.dp)) {
+            Artwork(song, Modifier.fillMaxSize())
+            if (batchSelected != null) Checkbox(
+                batchSelected, null,
+                Modifier.align(Alignment.BottomEnd).size(24.dp)
+                    .background(SphereSurface, RoundedCornerShape(8.dp)),
+            )
+        }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(
@@ -132,8 +144,8 @@ fun SongRow(
         }
         if (selected) PlaybackEqualizer(playing, song, Modifier.size(22.dp))
         else Text(formatTime(song.durationMs), color = SphereMuted, style = MaterialTheme.typography.labelSmall)
-        FavoriteButton(favorite, onFavorite)
-        if (onMore != null) IconButton(onMore) {
+        if (batchSelected == null) FavoriteButton(favorite, onFavorite)
+        if (onMore != null && batchSelected == null) IconButton(onMore) {
             Icon(Icons.Rounded.MoreVert, stringResource(R.string.song_actions, song.title))
         }
     }

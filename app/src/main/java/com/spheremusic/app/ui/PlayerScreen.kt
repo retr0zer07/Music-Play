@@ -135,6 +135,7 @@ fun PlayerScreen(
         }
         Scaffold(
             containerColor = LocalArtworkBackground.current,
+            contentColor = MaterialTheme.colorScheme.onSurface,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             snackbarHost = { SnackbarHost(snackbar) },
         ) { padding ->

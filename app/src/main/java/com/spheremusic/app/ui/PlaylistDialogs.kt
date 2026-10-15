@@ -58,13 +58,14 @@ fun SongActionsDialog(
     onPlayNext: () -> Unit = {},
     onShare: () -> Unit = {},
     onSelect: () -> Unit = {},
+    canPlayNext: Boolean = true,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(song.title) },
         text = {
             Column {
-                TextButton(onPlayNext) { Text(stringResource(R.string.play_next)) }
+                if (canPlayNext) TextButton(onPlayNext) { Text(stringResource(R.string.play_next)) }
                 TextButton(onShare) { Text(stringResource(R.string.share_song)) }
                 TextButton(onSelect) { Text(stringResource(R.string.select_songs)) }
                 TextButton(onAdd) { Text(stringResource(R.string.playlist_add)) }

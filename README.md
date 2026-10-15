@@ -8,16 +8,22 @@ cuando el archivo no tiene una portada disponible.
 ## Qué incluye esta versión
 
 - WhatsApp y WhatsApp Business excluidos por carpeta (no se borran archivos).
-- Selección múltiple: mantén pulsada una canción o usa **Seleccionar canciones**;
-  agrega a playlist o borra con confirmación. **Seleccionar todas** usa el filtro visible.
+- Selección múltiple sin perder las portadas: mantén pulsada una canción o usa
+  **Seleccionar canciones**; reproduce a continuación, agrega a playlist, comparte
+  o borra con confirmación. **Seleccionar todas** usa el filtro visible.
+  Reproducir a continuación respeta el orden de la lista, sin duplicar la canción
+  actual ni reiniciarla. Compartir envía todos los audios seleccionados.
 - Fondo oscuro adaptado al color dominante de la portada, con transición.
-- Barra de reproducción ondulada, avance suavizado y arrastre accesible.
+- Textos y controles claros también sobre fondos adaptados a la portada.
+- Barra de reproducción limpia con degradado, avance suavizado, control ampliado
+  al arrastrar y área táctil de al menos 48 dp.
 - Ecualizador a la izquierda de **Desliza para ver letras**: bandas del dispositivo,
   presets Normal/Rock/Pop/Clásica/Graves/Voz y ajustes recordados. Disponible cuando
   Android proporciona un efecto para la sesión; informa si no puede aplicarlo.
 - La cola se abre en la canción actual. **Reproducir a continuación** mueve o inserta
   un audio después del actual sin reiniciarlo; desactiva mezcla/repetir una para
   respetar la elección.
+  Esta acción no se ofrece para la canción que ya está sonando.
 - **Compartir canción** abre el selector de Android con el archivo de audio y
   un permiso temporal de lectura, no con su ruta privada.
 

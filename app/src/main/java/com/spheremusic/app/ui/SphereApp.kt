@@ -41,6 +41,7 @@ import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Sort
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
@@ -120,6 +121,8 @@ fun SphereApp(
     onDeleteSongs: (List<Song>) -> Unit = {},
     onPlayNext: (Song) -> Unit = {},
     onShare: (Song) -> Unit = {},
+    onPlayNextSongs: (List<Song>) -> Unit = {},
+    onShareSongs: (List<Song>) -> Unit = {},
 ) {
     var section by rememberSaveable { mutableStateOf(0) }
     var search by rememberSaveable { mutableStateOf("") }
@@ -139,8 +142,6 @@ fun SphereApp(
     var batchPicker by remember { mutableStateOf(false) }
     var batchCreate by remember { mutableStateOf(false) }
     var batchDelete by remember { mutableStateOf(false) }
-    val selectedSongs = state.songs.filter { it.id in selectedIds }
-    LaunchedEffect(state.songs) { selectedIds = selectedIds.filter { id -> state.songs.any { it.id == id } }.toLongArray() }
     fun selectSong(song: Song) {
         selectedIds = if (song.id in selectedIds) selectedIds.filterNot { it == song.id }.toLongArray() else selectedIds + song.id
     }
@@ -165,8 +166,11 @@ fun SphereApp(
             search.isBlank() || listOf(it.title, it.artist, it.album).any { value -> value.contains(search.trim(), ignoreCase = true) }
         }
     }
+    val selectedSongs = collection.filter { it.id in selectedIds }
+    LaunchedEffect(collection) { selectedIds = selectedIds.filter { id -> collection.any { it.id == id } }.toLongArray() }
     Scaffold(
         containerColor = LocalArtworkBackground.current,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         snackbarHost = { if (!playerOpen) SnackbarHost(snackbar) },
         bottomBar = {
             if (permission) {
@@ -180,7 +184,7 @@ fun SphereApp(
                         labels.forEachIndexed { index, label ->
                             NavigationBarItem(
                                 selected = section == index,
-                                onClick = { section = index; selectedAlbum = null; selectedPlaylist = null; search = "" },
+                                onClick = { section = index; selectedAlbum = null; selectedPlaylist = null; search = ""; selectedIds = longArrayOf() },
                                 icon = { Icon(icons[index], null) },
                                 label = { Text(stringResource(label)) },
                             )
@@ -226,18 +230,30 @@ fun SphereApp(
                     },
                 )
                 Spacer(Modifier.height(16.dp))
-                if (selectedIds.isNotEmpty()) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton({ selectedIds = longArrayOf() }) { Icon(Icons.Rounded.Close, stringResource(R.string.cancel)) }
-                    Text(selectedSongs.size.toString(), Modifier.weight(1f))
-                    IconButton({ selectedIds = filtered.map { it.id }.toLongArray() }) {
-                        Icon(Icons.Rounded.DoneAll, stringResource(R.string.select_all))
+                if (selectedIds.isNotEmpty()) Column {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton({ selectedIds = longArrayOf() }) { Icon(Icons.Rounded.Close, stringResource(R.string.cancel)) }
+                        Text(selectedSongs.size.toString(), Modifier.weight(1f))
+                        IconButton({ selectedIds = filtered.map { it.id }.toLongArray() }) {
+                            Icon(Icons.Rounded.DoneAll, stringResource(R.string.select_all))
+                        }
                     }
-                    IconButton({ batchPicker = true }) { Icon(Icons.Rounded.PlaylistAdd, stringResource(R.string.playlist_add)) }
-                    IconButton({ batchDelete = true }) { Icon(Icons.Rounded.Delete, stringResource(R.string.delete_song)) }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        IconButton({
+                            onPlayNextSongs(selectedSongs); selectedIds = longArrayOf()
+                        }, enabled = state.ready && selectedSongs.any { it.id != state.current?.id }) {
+                            Icon(Icons.Rounded.PlaylistPlay, stringResource(R.string.play_next))
+                        }
+                        IconButton({ batchPicker = true }) { Icon(Icons.Rounded.PlaylistAdd, stringResource(R.string.playlist_add)) }
+                        IconButton({ onShareSongs(selectedSongs) }, enabled = selectedSongs.isNotEmpty()) {
+                            Icon(Icons.Rounded.Share, stringResource(R.string.share_song))
+                        }
+                        IconButton({ batchDelete = true }) { Icon(Icons.Rounded.Delete, stringResource(R.string.delete_song)) }
+                    }
                 }
                 Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     if ((section == 1 && selectedAlbum != null) || (section == 3 && playlist != null)) IconButton({
-                        selectedAlbum = null; selectedPlaylist = null
+                        selectedAlbum = null; selectedPlaylist = null; selectedIds = longArrayOf()
                     }) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back))
                     }
@@ -384,6 +400,7 @@ fun SphereApp(
             { onPlayNext(song); actionsSong = null },
             { onShare(song); actionsSong = null },
             { selectSong(song); actionsSong = null; playerOpen = false },
+            canPlayNext = song.id != state.current?.id,
         )
     }
     playlistMenu?.let { item ->

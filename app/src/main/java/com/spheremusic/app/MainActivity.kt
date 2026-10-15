@@ -37,6 +37,7 @@ import com.spheremusic.app.ui.SphereApp
 import com.spheremusic.app.ui.SphereTheme
 import com.spheremusic.app.ui.hideStatusBar
 import com.spheremusic.app.data.CopiedLyrics
+import com.spheremusic.app.data.Song
 import com.spheremusic.app.ui.LocalArtworkBackground
 import com.spheremusic.app.ui.rememberArtworkBackground
 
@@ -183,21 +184,9 @@ class MainActivity : ComponentActivity() {
                     onAddManyToPlaylist = model::addManyToPlaylist,
                     onCreateManyPlaylist = model::createManyPlaylist,
                     onPlayNext = model::playNext,
-                    onShare = { song ->
-                        try {
-                            val share = Intent(Intent.ACTION_SEND).apply {
-                                type = contentResolver.getType(song.uri) ?: "audio/*"
-                                putExtra(Intent.EXTRA_STREAM, song.uri)
-                                clipData = ClipData.newUri(contentResolver, song.title, song.uri)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                            startActivity(Intent.createChooser(share, getString(com.spheremusic.app.R.string.share_song)))
-                        } catch (error: ActivityNotFoundException) {
-                            model.shareError(error)
-                        } catch (error: SecurityException) {
-                            model.shareError(error)
-                        }
-                    },
+                    onShare = { shareSongs(listOf(it)) },
+                    onPlayNextSongs = model::playNextSongs,
+                    onShareSongs = ::shareSongs,
                     onDeleteSongs = { songs ->
                         if (Build.VERSION.SDK_INT <= 28 && !hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
                             legacyDeleteIds = songs.map { it.id }.toLongArray()
@@ -224,12 +213,36 @@ class MainActivity : ComponentActivity() {
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
+    private fun shareSongs(songs: List<Song>) {
+        try {
+            startActivity(Intent.createChooser(audioShareIntent(songs), getString(R.string.share_song)))
+        } catch (error: ActivityNotFoundException) {
+            model.shareError(error)
+        } catch (error: SecurityException) {
+            model.shareError(error)
+        }
+    }
+
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
             window.hideStatusBar()
             clipboardHandler.removeCallbacks(importClipboard)
             clipboardHandler.postDelayed(importClipboard, 200)
+        }
+
+        internal fun audioShareIntent(songs: List<Song>): Intent {
+            require(songs.isNotEmpty()) { "Select audio to share" }
+            val uris = songs.distinctBy { it.id }.map { it.uri }
+            return Intent(if (uris.size == 1) Intent.ACTION_SEND else Intent.ACTION_SEND_MULTIPLE).apply {
+                type = "audio/*"
+                if (uris.size == 1) putExtra(Intent.EXTRA_STREAM, uris.first())
+                else putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+                clipData = ClipData.newRawUri(songs.first().title, uris.first()).apply {
+                    uris.drop(1).forEach { addItem(ClipData.Item(it)) }
+                }
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
         }
     }
 

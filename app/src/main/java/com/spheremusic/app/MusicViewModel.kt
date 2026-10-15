@@ -390,21 +390,24 @@ class MusicViewModel(application: Application, private val savedState: SavedStat
         savedState.remove<Array<String>>("deleting_uris")
     }
 
-    fun playNext(song: Song) {
+    fun playNext(song: Song) = playNextSongs(listOf(song))
+
+    fun playNextSongs(songs: List<Song>) {
         val player = controller ?: return
-        if (player.currentMediaItem?.mediaId == song.id.toString()) return
+        val next = songs.distinctBy { it.id }.filter { it.id.toString() != player.currentMediaItem?.mediaId }
+        if (next.isEmpty()) return
         if (player.mediaItemCount == 0) {
-            play(listOf(song), song)
+            play(next, next.first())
             return
         }
         // An explicit next request overrides shuffled/repeat-one order, without restarting the current track.
         player.shuffleModeEnabled = false
         if (player.repeatMode == Player.REPEAT_MODE_ONE) player.repeatMode = Player.REPEAT_MODE_OFF
-        val existing = (0 until player.mediaItemCount).firstOrNull {
-            player.getMediaItemAt(it).mediaId == song.id.toString()
+        val ids = next.map { it.id.toString() }.toSet()
+        for (index in player.mediaItemCount - 1 downTo 0) {
+            if (player.getMediaItemAt(index).mediaId in ids) player.removeMediaItem(index)
         }
-        if (existing != null) player.removeMediaItem(existing)
-        player.addMediaItem(player.currentMediaItemIndex + 1, song.toMediaItem())
+        player.addMediaItems(player.currentMediaItemIndex + 1, next.map(Song::toMediaItem))
         syncPlayer()
         viewModelScope.launch { messages.send(R.string.play_next_added) }
     }
