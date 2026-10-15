@@ -58,6 +58,8 @@ class LibraryPlaybackActionsTest {
             val songs = ids.map { id -> model.state.value.songs.single { it.id == id } }
             compose.runOnIdle { model.play(songs, songs[0]) }
             compose.waitUntil(10_000) { model.state.value.playing }
+            // The audio session is allocated lazily when Android starts rendering.
+            compose.waitUntil(10_000) { EqualizerControl.state.value.frequencies.isNotEmpty() || EqualizerControl.state.value.error }
             compose.runOnIdle { model.togglePlayback(); model.seek(5_000) }
             compose.waitUntil(5_000) { !model.state.value.playing && model.state.value.positionMs >= 5_000 }
             compose.runOnIdle { model.playNext(songs[2]) }

@@ -42,10 +42,13 @@ jobs:
             adb install apks/Sphere-Music.apk
             adb install apks/app-debug-androidTest.apk
             adb shell am instrument -w com.spheremusic.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results.txt
+            adb logcat -d -t 1200 > device-logcat.txt
             grep -E '^OK \([0-9]+ tests?\)' device-results.txt
             if grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' device-results.txt; then exit 1; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: device-test-results
-          path: device-results.txt
+          path: |
+            device-results.txt
+            device-logcat.txt
