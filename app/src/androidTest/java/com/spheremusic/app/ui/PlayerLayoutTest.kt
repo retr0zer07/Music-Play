@@ -11,7 +11,6 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.isDialog
-import androidx.compose.ui.test.onNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.core.graphics.ColorUtils
 import androidx.test.platform.app.InstrumentationRegistry
