@@ -25,6 +25,7 @@ class LibraryPlaybackActionsTest {
     @get:Rule(order = 1) val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun playNextPreservesPositionDeduplicatesAndEqualizerFollowsAudioSession() {
+        compose.mainClock.autoAdvance = false
         val context = compose.activity.applicationContext
         val resolver = context.contentResolver
         val uris = mutableListOf<android.net.Uri>()

@@ -109,7 +109,7 @@ class BatchLibraryTest {
             compose.waitUntil(5_000) { model.state.value.playlists.single { it.id == playlist.id }.songIds.isEmpty() }
         } finally {
             playlistId?.let { id -> compose.runOnIdle { model.deletePlaylist(id) } }
-            uris.forEach { resolver.delete(it, null, null) }
+            uris.filter(::exists).forEach { resolver.delete(it, null, null) }
         }
     }
 }
