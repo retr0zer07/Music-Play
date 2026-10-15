@@ -36,7 +36,7 @@ fun PlaybackSeekBar(
         onValueChangeFinished = { dragging = false; onValueChangeFinished() },
         valueRange = valueRange, enabled = enabled, modifier = modifier.heightIn(min = 48.dp),
         thumb = {
-            Canvas(Modifier.size(28.dp)) {
+            Canvas(Modifier.size(width = 28.dp, height = 48.dp)) {
                 if (dragging) drawCircle(SphereMint.copy(alpha = 0.18f))
                 drawCircle(if (enabled) SphereMint else SphereMuted, if (dragging) 10.dp.toPx() else 8.dp.toPx())
                 drawCircle(SphereBackground.copy(alpha = 0.3f), 4.dp.toPx(), style = Stroke(1.dp.toPx()))
